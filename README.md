@@ -46,25 +46,22 @@ the server, and run `sudo ./deploy/install.sh --no-build`.
 Useful commands: `systemctl status cmms-api`, `journalctl -u cmms-api -f`, `systemctl list-timers 'cmms-*'`.
 To run a job now: `sudo systemctl start cmms-pm`.
 
-## Install on a Windows PC (desktop icon)
+## Install on a Windows PC (one click, desktop icon)
 
-Prerequisites: Java 21, Maven, Node.js, and PostgreSQL with a database `cmms` owned by user `cmms` (password `cmms`).
-From the `maintenance-app` folder in PowerShell:
+1. Build the download with `./deploy/package-windows.sh`, or use a copy you were sent. This gives you
+   `dist/windows/MaintenanceManager-Windows.zip` (about 57 MB, with the app already built inside).
+2. On the PC, right-click the zip, choose **Extract All**, and double-click **Install Maintenance Manager**.
 
-```bash
-powershell -ExecutionPolicy Bypass -File windows\setup.ps1
-```
+The installer adds Java 21 and PostgreSQL through winget if they are missing. It creates the `cmms` database, and
+doesn't need the postgres password: it allows local connections without a password for a moment, then puts the
+original settings back. It installs to `%LOCALAPPDATA%\MaintenanceManager`, creates Desktop and Start-menu icons, and
+opens the app. Run it again to upgrade; settings and data are kept.
 
-This builds the app, installs it to `%LOCALAPPDATA%\MaintenanceManager`, and creates a **Maintenance Manager** icon on
-the Desktop and in the Start menu. The icon starts the server in the background if it isn't already running, then
-opens the app in its own window. Use **Stop Maintenance Manager** in the Start menu to shut the server down.
-
-- Add `-StartWithWindows` to start the server automatically when you log in.
-- Settings (database password, port, network access) are in `%LOCALAPPDATA%\MaintenanceManager\config.ps1`.
-  Logs are in the `logs` folder next to it.
-- To upgrade, run setup again; settings and data are kept. Run `-Uninstall` to remove the icons and program files.
-- The Windows install doesn't run the scheduled Python jobs. Use **Generate due now** on the PM Schedules page,
-  or run the worker by hand.
+- Add `-StartWithWindows` (run the `.bat` from a command prompt) to start the server automatically at login.
+  Use `-Uninstall` to remove the icons and program files.
+- Settings are in `%LOCALAPPDATA%\MaintenanceManager\config.ps1` and logs are in the `logs` folder next to it.
+- To build from source on Windows instead: `powershell -ExecutionPolicy Bypass -File windows\setup.ps1`.
+- The Windows install doesn't run the scheduled Python jobs. Use **Generate due now** on the PM Schedules page.
 
 ## Roles
 - **Requester:** places maintenance requests and sees their status.
