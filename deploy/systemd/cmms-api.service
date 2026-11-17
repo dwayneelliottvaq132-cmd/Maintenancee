@@ -1,0 +1,23 @@
+[Unit]
+Description=CMMS maintenance API (Spring Boot)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=cmms
+Group=cmms
+EnvironmentFile=/etc/cmms/cmms.env
+WorkingDirectory=/opt/cmms/backend
+ExecStart=/usr/bin/java -Xms256m -Xmx768m -jar /opt/cmms/backend/cmms-api.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/cmms
+
+[Install]
+WantedBy=multi-user.target

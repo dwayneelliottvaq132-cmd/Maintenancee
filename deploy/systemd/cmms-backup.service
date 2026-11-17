@@ -1,0 +1,16 @@
+[Unit]
+Description=CMMS: database and uploads backup
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=cmms
+Group=cmms
+EnvironmentFile=/etc/cmms/cmms.env
+WorkingDirectory=/opt/cmms/worker
+ExecStart=/opt/cmms/backup.sh
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/cmms /var/backups/cmms

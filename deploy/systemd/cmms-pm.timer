@@ -1,0 +1,10 @@
+[Unit]
+Description=CMMS: PM work-order generation (daily 02:00 and 12:00)
+
+[Timer]
+OnCalendar=*-*-* 02,12:00:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

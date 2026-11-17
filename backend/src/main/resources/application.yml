@@ -1,0 +1,45 @@
+server:
+  port: ${CMMS_PORT:8080}
+  address: ${CMMS_BIND:0.0.0.0}
+  servlet:
+    context-path: /
+spring:
+  application:
+    name: cmms-api
+  datasource:
+    url: ${CMMS_DB_URL:jdbc:postgresql://localhost:5432/cmms}
+    username: ${CMMS_DB_USER:cmms}
+    password: ${CMMS_DB_PASSWORD:cmms}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+  jackson:
+    default-property-inclusion: always
+    serialization:
+      write-dates-as-timestamps: false
+cmms:
+  jwt-secret: ${CMMS_JWT_SECRET:change-me-change-me-change-me-change-me-change-me-0123456789}
+  jwt-hours: ${CMMS_JWT_HOURS:12}
+  upload-dir: ${CMMS_UPLOAD_DIR:./data/uploads}
+  report-dir: ${CMMS_REPORT_DIR:./data/reports}
+  admin-password: ${CMMS_ADMIN_PASSWORD:admin123}
+springdoc:
+  api-docs:
+    path: /api/docs/openapi
+  swagger-ui:
+    path: /api/docs
+management:
+  endpoints:
+    web:
+      base-path: /api/actuator
+      exposure:
+        include: health

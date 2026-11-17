@@ -1,0 +1,16 @@
+[Unit]
+Description=CMMS: monthly spending report (PDF + Excel)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=cmms
+Group=cmms
+EnvironmentFile=/etc/cmms/cmms.env
+WorkingDirectory=/opt/cmms/worker
+ExecStart=/opt/cmms/worker/.venv/bin/python -m cmms_worker report
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/cmms /var/backups/cmms
