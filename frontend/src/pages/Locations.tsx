@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Paper, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
@@ -24,35 +25,35 @@ export default function LocationsPage() {
 
   return (
     <>
-      <PageHeader title="Locations" subtitle="Sites, buildings, floors and areas"
-        actions={isSupervisor && <Button variant="contained" onClick={() => setEdit({})}>Add location</Button>} />
+      <PageHeader title={t("Locations")} subtitle={t("Sites, buildings, floors and areas")}
+        actions={isSupervisor && <Button variant="contained" onClick={() => setEdit({})}>{t("Add location")}</Button>} />
       {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr(null)}>{err}</Alert>}
       <Paper sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead><TableRow><TableCell>Location</TableCell><TableCell>Description</TableCell><TableCell align="right">Assets</TableCell><TableCell /></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>{t("Location")}</TableCell><TableCell>{t("Description")}</TableCell><TableCell align="right">{t("Assets")}</TableCell><TableCell /></TableRow></TableHead>
           <TableBody>
             {sorted.map((l) => (
               <TableRow key={l.id}>
                 <TableCell>{path(l)}</TableCell><TableCell>{l.description}</TableCell>
                 <TableCell align="right">{lk.assets.filter((a) => a.locationId === l.id).length}</TableCell>
                 <TableCell align="right">{isSupervisor && <>
-                  <Button size="small" onClick={() => setEdit(l)}>Edit</Button>
+                  <Button size="small" onClick={() => setEdit(l)}>{t("Edit")}</Button>
                   <Button size="small" color="error" onClick={async () => {
-                    if (!confirm(`Delete ${l.name}?`)) return;
+                    if (!confirm(t('Delete {name}?', { name: l.name }))) return;
                     try { await api.delete(`/locations/${l.id}`); reload(); } catch (e) { setErr(errMsg(e)); }
-                  }}>Delete</Button></>}
+                  }}>{t("Delete")}</Button></>}
                 </TableCell>
               </TableRow>
             ))}
-            {!sorted.length && <TableRow><TableCell colSpan={4}>No locations yet.</TableCell></TableRow>}
+            {!sorted.length && <TableRow><TableCell colSpan={4}>{t("No locations yet.")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Paper>
-      <FormDialog open={!!edit} title={edit?.id ? 'Edit location' : 'Add location'} initial={edit ?? {}} onClose={() => setEdit(null)}
+      <FormDialog open={!!edit} title={edit?.id ? t('Edit location') : t('Add location')} initial={edit ?? {}} onClose={() => setEdit(null)}
         fields={[
-          { name: 'name', label: 'Name', required: true },
-          { name: 'parentId', label: 'Inside (parent location)', type: 'select', options: opts(lk.locations.filter((l) => l.id !== edit?.id), (l) => l.id, path) },
-          { name: 'description', label: 'Description', type: 'textarea' },
+          { name: 'name', label: t("Name"), required: true },
+          { name: 'parentId', label: t("Inside (parent location)"), type: 'select', options: opts(lk.locations.filter((l) => l.id !== edit?.id), (l) => l.id, path) },
+          { name: 'description', label: t("Description"), type: 'textarea' },
         ]}
         onSubmit={(v) => (v.id ? api.put(`/locations/${v.id}`, v) : api.post('/locations', v)).then(reload)} />
     </>

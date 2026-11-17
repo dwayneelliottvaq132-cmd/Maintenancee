@@ -1,3 +1,4 @@
+import { t, tEnum, locale } from '../i18n';
 import { ReactNode, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -26,15 +27,15 @@ const STATUS_COLORS: Record<string, 'default' | 'primary' | 'secondary' | 'succe
 
 export function StatusChip({ value }: { value?: string | null }) {
   if (!value) return null;
-  return <Chip size="small" label={value.replace('_', ' ')} color={STATUS_COLORS[value] ?? 'default'}
+  return <Chip size="small" label={tEnum(value)} color={STATUS_COLORS[value] ?? 'default'}
     variant={value === 'CANCELLED' || value === 'RETIRED' ? 'outlined' : 'filled'} />;
 }
 
 export const money = (v: unknown) =>
-  Number(v ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
-export const num = (v: unknown) => Number(v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-export const date = (v?: string | null) => (v ? new Date(v.length === 10 ? v + 'T00:00:00' : v).toLocaleDateString() : '—');
-export const dateTime = (v?: string | null) => (v ? new Date(v).toLocaleString() : '—');
+  (Number(v ?? 0) < 0 ? '-$' : '$') + Math.abs(Number(v ?? 0)).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const num = (v: unknown) => Number(v ?? 0).toLocaleString(locale(), { maximumFractionDigits: 2 });
+export const date = (v?: string | null) => (v ? new Date(v.length === 10 ? v + 'T00:00:00' : v).toLocaleDateString(locale()) : '—');
+export const dateTime = (v?: string | null) => (v ? new Date(v).toLocaleString(locale()) : '—');
 export const today = () => new Date().toISOString().slice(0, 10);
 
 /** Shared lookup lists used to turn ids into names. */
@@ -72,7 +73,7 @@ export function FormDialog<T extends Record<string, any>>({ open, title, fields,
   const set = (k: string, v: any) => setValues((s) => ({ ...s, [k]: v }));
   const submit = async () => {
     const missing = fields.filter((f) => f.required && (values[f.name] === undefined || values[f.name] === null || values[f.name] === ''));
-    if (missing.length) { setError(`Please fill in: ${missing.map((m) => m.label).join(', ')}`); return; }
+    if (missing.length) { setError(t('Please fill in: {fields}', { fields: missing.map((m) => m.label).join(', ') })); return; }
     setBusy(true); setError(null);
     try { await onSubmit(values); onClose(); } catch (e) { setError(errMsg(e)); } finally { setBusy(false); }
   };
@@ -102,7 +103,7 @@ export function FormDialog<T extends Record<string, any>>({ open, title, fields,
                 select={f.type === 'select'} multiline={f.type === 'textarea'} minRows={f.type === 'textarea' ? 3 : undefined}
                 InputLabelProps={f.type === 'date' ? { shrink: true } : undefined}
                 value={v ?? ''} onChange={(e) => set(f.name, f.type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value === '' && f.type === 'select' ? null : e.target.value)}>
-                {f.type === 'select' && [<MenuItem key="__none" value=""><em>None</em></MenuItem>,
+                {f.type === 'select' && [<MenuItem key="__none" value=""><em>{t("None")}</em></MenuItem>,
                   ...(f.options ?? []).map((o) => <MenuItem key={String(o.value)} value={o.value}>{o.label}</MenuItem>)]}
               </TextField>
             );
@@ -110,7 +111,7 @@ export function FormDialog<T extends Record<string, any>>({ open, title, fields,
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t("Cancel")}</Button>
         <Button variant="contained" onClick={submit} disabled={busy}>{submitLabel}</Button>
       </DialogActions>
     </Dialog>
@@ -120,7 +121,7 @@ export function FormDialog<T extends Record<string, any>>({ open, title, fields,
 export function opts<T>(list: T[], value: (t: T) => any, label: (t: T) => string) {
   return list.map((t) => ({ value: value(t), label: label(t) }));
 }
-export const enumOpts = (...vals: string[]) => vals.map((v) => ({ value: v, label: v.replace('_', ' ') }));
+export const enumOpts = (...vals: string[]) => vals.map((v) => ({ value: v, label: tEnum(v) }));
 
 export function downloadCsv(filename: string, rows: Record<string, any>[]) {
   if (!rows.length) return;

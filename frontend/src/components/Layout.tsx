@@ -1,3 +1,5 @@
+import { t, tEnum } from '../i18n';
+import LanguageSwitch from './LanguageSwitch';
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
@@ -49,7 +51,7 @@ export default function Layout() {
           <ListItemButton key={n.to} component={Link} to={n.to} selected={active} onClick={() => setOpen(false)}
             sx={{ mx: 1, borderRadius: 1 }}>
             <ListItemIcon sx={{ minWidth: 38 }}>{n.icon}</ListItemIcon>
-            <ListItemText primary={n.label} />
+            <ListItemText primary={t(n.label)} />
           </ListItemButton>
         );
       })}
@@ -60,12 +62,13 @@ export default function Layout() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar>
-          {mobile && <IconButton color="inherit" edge="start" onClick={() => setOpen(true)} aria-label="menu"><MenuIcon /></IconButton>}
-          <Typography variant="h6" sx={{ flexGrow: 1, ml: mobile ? 1 : 0 }} noWrap>Maintenance Manager</Typography>
+          {mobile && <IconButton color="inherit" edge="start" onClick={() => setOpen(true)} aria-label={t("menu")}><MenuIcon /></IconButton>}
+          <Typography variant="h6" sx={{ flexGrow: 1, ml: mobile ? 1 : 0 }} noWrap>{t("Maintenance Manager")}</Typography>
           <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
-            {user?.fullName} · {user?.role.toLowerCase()}
+            {user?.fullName} · {tEnum(user?.role).toLowerCase()}
           </Typography>
-          <Button color="inherit" onClick={logout}>Log out</Button>
+          <LanguageSwitch color="inherit" />
+          <Button color="inherit" onClick={logout}>{t("Log out")}</Button>
         </Toolbar>
       </AppBar>
       <Drawer variant={mobile ? 'temporary' : 'permanent'} open={mobile ? open : true} onClose={() => setOpen(false)}

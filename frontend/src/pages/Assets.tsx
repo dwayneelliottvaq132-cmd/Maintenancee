@@ -1,3 +1,4 @@
+import { t, tEnum } from '../i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,22 +9,22 @@ import { FormDialog, PageHeader, StatusChip, date, enumOpts, money, opts, useLoo
 
 export function assetFields(lk: ReturnType<typeof useLookups>, selfId?: number): Field[] {
   return [
-    { name: 'tag', label: 'Asset tag / ID', required: true, half: true },
-    { name: 'name', label: 'Name', required: true, half: true },
-    { name: 'category', label: 'Category (e.g. HVAC, Pumps, Vehicles)', half: true },
-    { name: 'locationId', label: 'Location', type: 'select', half: true, options: opts(lk.locations, (l) => l.id, (l) => l.name) },
-    { name: 'status', label: 'Status', type: 'select', half: true, options: enumOpts('ACTIVE', 'DOWN', 'RETIRED') },
-    { name: 'criticality', label: 'Criticality', type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH') },
-    { name: 'parentAssetId', label: 'Part of (parent asset)', type: 'autocomplete',
+    { name: 'tag', label: t("Asset tag / ID"), required: true, half: true },
+    { name: 'name', label: t("Name"), required: true, half: true },
+    { name: 'category', label: t("Category (e.g. HVAC, Pumps, Vehicles)"), half: true },
+    { name: 'locationId', label: t("Location"), type: 'select', half: true, options: opts(lk.locations, (l) => l.id, (l) => l.name) },
+    { name: 'status', label: t("Status"), type: 'select', half: true, options: enumOpts('ACTIVE', 'DOWN', 'RETIRED') },
+    { name: 'criticality', label: t("Criticality"), type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH') },
+    { name: 'parentAssetId', label: t("Part of (parent asset)"), type: 'autocomplete',
       options: opts(lk.assets.filter((a) => a.id !== selfId), (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
-    { name: 'manufacturer', label: 'Manufacturer', half: true },
-    { name: 'model', label: 'Model', half: true },
-    { name: 'serialNumber', label: 'Serial number', half: true },
-    { name: 'installDate', label: 'Install date', type: 'date', half: true },
-    { name: 'purchaseCost', label: 'Purchase cost ($)', type: 'number', half: true },
-    { name: 'warrantyUntil', label: 'Warranty until', type: 'date', half: true },
-    { name: 'meterUnit', label: 'Meter unit (hours, miles, cycles)', half: true },
-    { name: 'notes', label: 'Notes', type: 'textarea' },
+    { name: 'manufacturer', label: t("Manufacturer"), half: true },
+    { name: 'model', label: t("Model"), half: true },
+    { name: 'serialNumber', label: t("Serial number"), half: true },
+    { name: 'installDate', label: t("Install date"), type: 'date', half: true },
+    { name: 'purchaseCost', label: t("Purchase cost ($)"), type: 'number', half: true },
+    { name: 'warrantyUntil', label: t("Warranty until"), type: 'date', half: true },
+    { name: 'meterUnit', label: t("Meter unit (hours, miles, cycles)"), half: true },
+    { name: 'notes', label: t("Notes"), type: 'textarea' },
   ];
 }
 
@@ -43,22 +44,22 @@ export default function AssetsPage() {
 
   return (
     <>
-      <PageHeader title="Assets" subtitle="Equipment, facilities and vehicles you maintain"
-        actions={isSupervisor && <Button variant="contained" onClick={() => setOpen(true)}>Add asset</Button>} />
+      <PageHeader title={t("Assets")} subtitle={t("Equipment, facilities and vehicles you maintain")}
+        actions={isSupervisor && <Button variant="contained" onClick={() => setOpen(true)}>{t("Add asset")}</Button>} />
       <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} mb={2}>
-        <TextField size="small" label="Search" value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 260 }} />
-        <TextField size="small" select label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 160 }}>
-          <MenuItem value="">All</MenuItem>
-          {['ACTIVE', 'DOWN', 'RETIRED'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+        <TextField size="small" label={t("Search")} value={q} onChange={(e) => setQ(e.target.value)} sx={{ minWidth: 260 }} />
+        <TextField size="small" select label={t("Status")} value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 160 }}>
+          <MenuItem value="">{t("All")}</MenuItem>
+          {['ACTIVE', 'DOWN', 'RETIRED'].map((s) => <MenuItem key={s} value={s}>{tEnum(s)}</MenuItem>)}
         </TextField>
       </Stack>
       <Paper sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Tag</TableCell><TableCell>Name</TableCell><TableCell>Category</TableCell><TableCell>Location</TableCell>
-              <TableCell>Status</TableCell><TableCell>Criticality</TableCell><TableCell align="right">Open WOs</TableCell>
-              <TableCell>Next PM</TableCell><TableCell align="right">Lifetime cost</TableCell>
+              <TableCell>{t("Tag")}</TableCell><TableCell>{t("Name")}</TableCell><TableCell>{t("Category")}</TableCell><TableCell>{t("Location")}</TableCell>
+              <TableCell>{t("Status")}</TableCell><TableCell>{t("Criticality")}</TableCell><TableCell align="right">{t("Open WOs")}</TableCell>
+              <TableCell>{t("Next PM")}</TableCell><TableCell align="right">{t("Lifetime cost")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -70,11 +71,11 @@ export default function AssetsPage() {
                 <TableCell>{date(a.nextPmDue)}</TableCell><TableCell align="right">{money(a.lifetimeCost)}</TableCell>
               </TableRow>
             ))}
-            {!rows.length && <TableRow><TableCell colSpan={9}>No assets found.</TableCell></TableRow>}
+            {!rows.length && <TableRow><TableCell colSpan={9}>{t("No assets found.")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Paper>
-      <FormDialog open={open} title="Add asset" fields={assetFields(lk)} initial={blank} onClose={() => setOpen(false)}
+      <FormDialog open={open} title={t("Add asset")} fields={assetFields(lk)} initial={blank} onClose={() => setOpen(false)}
         onSubmit={async (v) => {
           const { data } = await api.post('/assets', v);
           qc.invalidateQueries({ queryKey: ['assets'] });

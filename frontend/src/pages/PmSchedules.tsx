@@ -1,3 +1,4 @@
+import { t, tEnum, locale } from '../i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -15,23 +16,23 @@ export function PmDialog({ open, onClose, initial, onSaved }: { open: boolean; o
   const init = useMemo(() => ({ frequencyType: 'MONTHS', intervalValue: 1, leadDays: 0, priority: 'MEDIUM', active: true,
     nextDue: today(), ...initial }), [open]); // eslint-disable-line
   return (
-    <FormDialog open={open} onClose={onClose} title={initial?.id ? 'Edit PM schedule' : 'New PM schedule'} initial={init}
+    <FormDialog open={open} onClose={onClose} title={initial?.id ? t('Edit PM schedule') : t('New PM schedule')} initial={init}
       fields={[
-        { name: 'title', label: 'Task title (e.g. Quarterly filter change)', required: true },
-        { name: 'assetId', label: 'Asset', type: 'autocomplete', required: true, options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
-        { name: 'instructionId', label: 'Work instruction', type: 'select', options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
-        { name: 'frequencyType', label: 'Repeat by', type: 'select', half: true, required: true, options: [
-          { value: 'DAYS', label: 'Days' }, { value: 'WEEKS', label: 'Weeks' }, { value: 'MONTHS', label: 'Months' },
-          { value: 'METER', label: 'Meter reading (hours/miles)' }] },
-        { name: 'intervalValue', label: 'Every (interval)', type: 'number', half: true, required: true },
-        { name: 'nextDue', label: 'Next due date (calendar schedules)', type: 'date', half: true },
-        { name: 'nextMeter', label: 'Next due at meter (meter schedules)', type: 'number', half: true,
-          helper: 'Leave blank to use current reading + interval' },
-        { name: 'leadDays', label: 'Create work order this many days early', type: 'number', half: true },
-        { name: 'priority', label: 'Priority', type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
-        { name: 'defaultAssigneeId', label: 'Assign to', type: 'select',
+        { name: 'title', label: t("Task title (e.g. Quarterly filter change)"), required: true },
+        { name: 'assetId', label: t("Asset"), type: 'autocomplete', required: true, options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
+        { name: 'instructionId', label: t("Work instruction"), type: 'select', options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
+        { name: 'frequencyType', label: t("Repeat by"), type: 'select', half: true, required: true, options: [
+          { value: 'DAYS', label: t("Days") }, { value: 'WEEKS', label: t("Weeks") }, { value: 'MONTHS', label: t("Months") },
+          { value: 'METER', label: t("Meter reading (hours/miles)") }] },
+        { name: 'intervalValue', label: t("Every (interval)"), type: 'number', half: true, required: true },
+        { name: 'nextDue', label: t("Next due date (calendar schedules)"), type: 'date', half: true },
+        { name: 'nextMeter', label: t("Next due at meter (meter schedules)"), type: 'number', half: true,
+          helper: t("Leave blank to use current reading + interval") },
+        { name: 'leadDays', label: t("Create work order this many days early"), type: 'number', half: true },
+        { name: 'priority', label: t("Priority"), type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
+        { name: 'defaultAssigneeId', label: t("Assign to"), type: 'select',
           options: opts(lk.users.filter((u) => u.active && u.role !== 'REQUESTER'), (u) => u.id, (u) => u.fullName) },
-        { name: 'active', label: 'Active', type: 'checkbox' },
+        { name: 'active', label: t("Active"), type: 'checkbox' },
       ]}
       onSubmit={async (v) => {
         if (v.id) await api.put(`/pm-schedules/${v.id}`, v); else await api.post('/pm-schedules', v);
@@ -72,11 +73,11 @@ function Calendar({ schedules }: { schedules: any[] }) {
       <Box display="flex" alignItems="center" mb={1}>
         <IconButton onClick={() => shift(-1)}><ChevronLeft /></IconButton>
         <Typography fontWeight={600} sx={{ minWidth: 160, textAlign: 'center' }}>
-          {month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</Typography>
+          {month.toLocaleDateString(locale(), { month: 'long', year: 'numeric' })}</Typography>
         <IconButton onClick={() => shift(1)}><ChevronRight /></IconButton>
       </Box>
       <Box display="grid" gridTemplateColumns="repeat(7, minmax(0, 1fr))" gap={0.5}>
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => <Typography key={d} variant="caption" textAlign="center">{d}</Typography>)}
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => new Date(2023, 0, 1 + i).toLocaleDateString(locale(), { weekday: 'short' })).map((d) => <Typography key={d} variant="caption" textAlign="center">{d}</Typography>)}
         {cells.map((day, i) => {
           const isToday = day && todayD.getDate() === day && todayD.getMonth() === month.getMonth() && todayD.getFullYear() === month.getFullYear();
           return (
@@ -90,7 +91,7 @@ function Calendar({ schedules }: { schedules: any[] }) {
           );
         })}
       </Box>
-      <Typography variant="caption" color="text.secondary">Projected from each schedule's next due date. Meter-based schedules are not shown.</Typography>
+      <Typography variant="caption" color="text.secondary">{t("Projected from each schedule's next due date. Meter-based schedules are not shown.")}</Typography>
     </Paper>
   );
 }
@@ -111,38 +112,38 @@ export default function PmPage() {
 
   return (
     <>
-      <PageHeader title="Preventive maintenance" subtitle="Recurring tasks. Work orders are created automatically each night when a task comes due."
+      <PageHeader title={t("Preventive maintenance")} subtitle={t("Recurring tasks. Work orders are created automatically each night when a task comes due.")}
         actions={isSupervisor && <>
-          <Button variant="outlined" onClick={() => run(() => api.post('/pm-schedules/generate-due'), (r) => `${r.length} work order(s) created`)}>Generate due now</Button>
-          <Button variant="contained" onClick={() => setEdit({})}>New schedule</Button>
+          <Button variant="outlined" onClick={() => run(() => api.post('/pm-schedules/generate-due'), (r) => t('{n} work order(s) created', { n: r.length }))}>{t("Generate due now")}</Button>
+          <Button variant="contained" onClick={() => setEdit({})}>{t("New schedule")}</Button>
         </>} />
       {msg && <Alert severity={msg.ok ? 'success' : 'error'} sx={{ mb: 2 }} onClose={() => setMsg(null)}>{msg.text}</Alert>}
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}><Tab label="List" /><Tab label="Calendar" /></Tabs>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}><Tab label={t("List")} /><Tab label={t("Calendar")} /></Tabs>
       {tab === 0 && (
         <Paper sx={{ overflowX: 'auto' }}>
           <Table size="small">
-            <TableHead><TableRow><TableCell>Task</TableCell><TableCell>Asset</TableCell><TableCell>Every</TableCell><TableCell>Next due</TableCell>
-              <TableCell>Instruction</TableCell><TableCell>Assigned</TableCell><TableCell>Open WO</TableCell><TableCell /></TableRow></TableHead>
+            <TableHead><TableRow><TableCell>{t("Task")}</TableCell><TableCell>{t("Asset")}</TableCell><TableCell>{t("Every")}</TableCell><TableCell>{t("Next due")}</TableCell>
+              <TableCell>{t("Instruction")}</TableCell><TableCell>{t("Assigned")}</TableCell><TableCell>{t("Open WO")}</TableCell><TableCell /></TableRow></TableHead>
             <TableBody>
               {data.map((s) => (
                 <TableRow key={s.id} sx={{ opacity: s.active ? 1 : 0.5 }}>
-                  <TableCell>{s.title}{!s.active && ' (inactive)'}</TableCell>
+                  <TableCell>{s.title}{!s.active && ` (${t('inactive')})`}</TableCell>
                   <TableCell>{s.assetTag} — {s.assetName}</TableCell>
-                  <TableCell>{s.intervalValue} {s.frequencyType === 'METER' ? (s.meterUnit ?? 'units') : s.frequencyType.toLowerCase()}</TableCell>
+                  <TableCell>{s.intervalValue} {s.frequencyType === 'METER' ? (s.meterUnit ?? t('units')) : tEnum(s.frequencyType).toLowerCase()}</TableCell>
                   <TableCell sx={{ color: s.overdue ? 'error.main' : undefined }}>
-                    {s.frequencyType === 'METER' ? `at ${num(s.nextMeter)} (now ${num(s.assetMeter)})` : date(s.nextDue)}</TableCell>
+                    {s.frequencyType === 'METER' ? t('at {n} (now {m})', { n: num(s.nextMeter), m: num(s.assetMeter) }) : date(s.nextDue)}</TableCell>
                   <TableCell>{s.instructionTitle}</TableCell><TableCell>{s.assigneeName}</TableCell>
                   <TableCell>{s.openWorkOrderId && <Button size="small" onClick={() => nav(`/work-orders/${s.openWorkOrderId}`)}>{s.openWorkOrderNumber}</Button>}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     {isSupervisor && <>
                       {!s.openWorkOrderId && s.active && <Button size="small"
-                        onClick={() => run(() => api.post(`/pm-schedules/${s.id}/generate-now`), (r) => `Created ${r.number}`)}>Create WO</Button>}
-                      <Button size="small" onClick={() => setEdit(s)}>Edit</Button>
+                        onClick={() => run(() => api.post(`/pm-schedules/${s.id}/generate-now`), (r) => t('Created {n}', { n: r.number }))}>{t("Create WO")}</Button>}
+                      <Button size="small" onClick={() => setEdit(s)}>{t("Edit")}</Button>
                     </>}
                   </TableCell>
                 </TableRow>
               ))}
-              {!data.length && <TableRow><TableCell colSpan={8}>No PM schedules yet.</TableCell></TableRow>}
+              {!data.length && <TableRow><TableCell colSpan={8}>{t("No PM schedules yet.")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </Paper>

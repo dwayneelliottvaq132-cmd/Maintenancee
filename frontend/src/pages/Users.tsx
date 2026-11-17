@@ -1,3 +1,4 @@
+import { t, tEnum } from '../i18n';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Paper, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
@@ -15,35 +16,35 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Employees & users" subtitle="People who request, perform and approve maintenance. Hourly rates drive labor cost."
-        actions={isAdmin && <Button variant="contained" onClick={() => setEdit({ role: 'TECHNICIAN', active: true, hourlyRate: 0 })}>Add user</Button>} />
+      <PageHeader title={t("Employees & users")} subtitle={t("People who request, perform and approve maintenance. Hourly rates drive labor cost.")}
+        actions={isAdmin && <Button variant="contained" onClick={() => setEdit({ role: 'TECHNICIAN', active: true, hourlyRate: 0 })}>{t("Add user")}</Button>} />
       <Paper sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead><TableRow><TableCell>Name</TableCell><TableCell>Username</TableCell><TableCell>Role</TableCell><TableCell>Trade</TableCell>
-            {isSupervisor && <TableCell align="right">Hourly rate</TableCell>}<TableCell>Email</TableCell><TableCell>Status</TableCell><TableCell /></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>{t("Name")}</TableCell><TableCell>{t("Username")}</TableCell><TableCell>{t("Role")}</TableCell><TableCell>{t("Trade")}</TableCell>
+            {isSupervisor && <TableCell align="right">{t("Hourly rate")}</TableCell>}<TableCell>{t("Email")}</TableCell><TableCell>{t("Status")}</TableCell><TableCell /></TableRow></TableHead>
           <TableBody>
             {users.map((u) => (
               <TableRow key={u.id} sx={{ opacity: u.active ? 1 : 0.5 }}>
-                <TableCell><b>{u.fullName}</b></TableCell><TableCell>{u.username}</TableCell><TableCell>{u.role}</TableCell>
+                <TableCell><b>{u.fullName}</b></TableCell><TableCell>{u.username}</TableCell><TableCell>{tEnum(u.role)}</TableCell>
                 <TableCell>{u.trade}</TableCell>{isSupervisor && <TableCell align="right">{money(u.hourlyRate)}</TableCell>}
                 <TableCell>{u.email}</TableCell><TableCell><StatusChip value={u.active ? 'ACTIVE' : 'RETIRED'} /></TableCell>
-                <TableCell>{isAdmin && <Button size="small" onClick={() => setEdit(u)}>Edit</Button>}</TableCell>
+                <TableCell>{isAdmin && <Button size="small" onClick={() => setEdit(u)}>{t("Edit")}</Button>}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </Paper>
-      <FormDialog open={!!edit} title={edit?.id ? `Edit ${edit.fullName}` : 'Add user'} initial={edit ?? {}} onClose={() => setEdit(null)}
+      <FormDialog open={!!edit} title={edit?.id ? t('Edit {name}', { name: edit.fullName }) : t('Add user')} initial={edit ?? {}} onClose={() => setEdit(null)}
         fields={[
-          { name: 'fullName', label: 'Full name', required: true, half: true },
-          { name: 'username', label: 'Username', required: !edit?.id, half: true, helper: edit?.id ? 'Username cannot be changed' : undefined },
-          { name: 'role', label: 'Role', type: 'select', half: true, required: true, options: enumOpts('REQUESTER', 'TECHNICIAN', 'SUPERVISOR', 'ADMIN') },
-          { name: 'trade', label: 'Trade (Electrician, HVAC…)', half: true },
-          { name: 'hourlyRate', label: 'Hourly rate ($)', type: 'number', half: true },
-          { name: 'email', label: 'Email (for alerts)', half: true },
-          { name: 'password', label: edit?.id ? 'Reset password (leave blank to keep)' : 'Temporary password (8+ chars)', type: 'password', required: !edit?.id,
-            helper: 'User will be asked to change it at next login' },
-          ...(edit?.id ? [{ name: 'active', label: 'Active (can log in)', type: 'checkbox' as const }] : []),
+          { name: 'fullName', label: t("Full name"), required: true, half: true },
+          { name: 'username', label: t("Username"), required: !edit?.id, half: true, helper: edit?.id ? t('Username cannot be changed') : undefined },
+          { name: 'role', label: t("Role"), type: 'select', half: true, required: true, options: enumOpts('REQUESTER', 'TECHNICIAN', 'SUPERVISOR', 'ADMIN') },
+          { name: 'trade', label: t("Trade (Electrician, HVAC…)"), half: true },
+          { name: 'hourlyRate', label: t("Hourly rate ($)"), type: 'number', half: true },
+          { name: 'email', label: t("Email (for alerts)"), half: true },
+          { name: 'password', label: edit?.id ? t('Reset password (leave blank to keep)') : t('Temporary password (8+ chars)'), type: 'password', required: !edit?.id,
+            helper: t("User will be asked to change it at next login") },
+          ...(edit?.id ? [{ name: 'active', label: t("Active (can log in)"), type: 'checkbox' as const }] : []),
         ]}
         onSubmit={(v) => (v.id ? api.put(`/users/${v.id}`, v) : api.post('/users', v)).then(reload)} />
     </>

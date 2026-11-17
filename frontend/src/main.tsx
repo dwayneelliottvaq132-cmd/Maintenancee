@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { AuthProvider } from './auth';
 import App from './App';
+import { LanguageProvider } from './i18n';
 
 const theme = createTheme({
   palette: { primary: { main: '#1565c0' }, background: { default: '#f4f6f8' } },
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <LanguageProvider>
       <QueryClientProvider client={qc}>
         <BrowserRouter>
           <AuthProvider>
@@ -24,6 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );

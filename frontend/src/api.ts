@@ -1,3 +1,4 @@
+import { tServer } from './i18n';
 import axios from 'axios';
 
 export const api = axios.create({ baseURL: '/api' });
@@ -21,7 +22,7 @@ api.interceptors.response.use(
 
 export function errMsg(e: unknown): string {
   const anyE = e as any;
-  return anyE?.response?.data?.error ?? anyE?.message ?? 'Something went wrong';
+  return tServer(anyE?.response?.data?.error ?? anyE?.message ?? 'Something went wrong');
 }
 
 /** URL for a file download that needs auth (opened in a new tab). */

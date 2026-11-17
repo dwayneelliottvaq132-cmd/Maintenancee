@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -29,23 +30,23 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Spending & reports" />
+      <PageHeader title={t("Spending & reports")} />
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }} variant="scrollable">
-        <Tab label="Spending" /><Tab label="Labor by employee" /><Tab label="Parts used" /><Tab label="Monthly PDF / Excel" />
+        <Tab label={t("Spending")} /><Tab label={t("Labor by employee")} /><Tab label={t("Parts used")} /><Tab label={t("Monthly PDF / Excel")} />
       </Tabs>
       {tab < 3 && (
         <Stack direction={{ xs: 'column', sm: 'row' }} gap={2} mb={2}>
-          <TextField size="small" type="date" label="From" InputLabelProps={{ shrink: true }} value={from} onChange={(e) => setFrom(e.target.value)} />
-          <TextField size="small" type="date" label="To" InputLabelProps={{ shrink: true }} value={to} onChange={(e) => setTo(e.target.value)} />
+          <TextField size="small" type="date" label={t("From")} InputLabelProps={{ shrink: true }} value={from} onChange={(e) => setFrom(e.target.value)} />
+          <TextField size="small" type="date" label={t("To")} InputLabelProps={{ shrink: true }} value={to} onChange={(e) => setTo(e.target.value)} />
           {tab === 0 && (
-            <TextField size="small" select label="Group by" value={groupBy} onChange={(e) => setGroupBy(e.target.value)} sx={{ minWidth: 180 }}>
-              <MenuItem value="asset">Asset</MenuItem><MenuItem value="category">Asset category</MenuItem>
-              <MenuItem value="employee">Employee (labor)</MenuItem><MenuItem value="month">Month</MenuItem>
-              <MenuItem value="type">Cost type</MenuItem><MenuItem value="workorder">Work order</MenuItem>
+            <TextField size="small" select label={t("Group by")} value={groupBy} onChange={(e) => setGroupBy(e.target.value)} sx={{ minWidth: 180 }}>
+              <MenuItem value="asset">{t("Asset")}</MenuItem><MenuItem value="category">{t("Asset category")}</MenuItem>
+              <MenuItem value="employee">{t("Employee (labor)")}</MenuItem><MenuItem value="month">{t("Month")}</MenuItem>
+              <MenuItem value="type">{t("Cost type")}</MenuItem><MenuItem value="workorder">{t("Work order")}</MenuItem>
             </TextField>
           )}
           <Button variant="outlined" onClick={() => downloadCsv(`report-${['spending-' + groupBy, 'labor', 'parts'][tab]}-${from}-to-${to}.csv`,
-            [spending.data, labor.data, parts.data][tab] ?? [])}>Export CSV</Button>
+            [spending.data, labor.data, parts.data][tab] ?? [])}>{t("Export CSV")}</Button>
         </Stack>
       )}
 
@@ -60,9 +61,9 @@ export default function ReportsPage() {
                     {groupBy === 'month' ? <><XAxis dataKey="label" fontSize={12} /><YAxis fontSize={12} /></>
                       : <><XAxis type="number" fontSize={12} /><YAxis type="category" dataKey="label" width={200} fontSize={12} /></>}
                     <Tooltip formatter={(v: number) => money(v)} /><Legend />
-                    <Bar isAnimationActive={false} dataKey="labor" stackId="a" name="Labor" fill="#1565c0" />
-                    <Bar isAnimationActive={false} dataKey="parts" stackId="a" name="Parts" fill="#ef6c00" />
-                    <Bar isAnimationActive={false} dataKey="other" stackId="a" name="Other" fill="#78909c" />
+                    <Bar isAnimationActive={false} dataKey="labor" stackId="a" name={t("Labor")} fill="#1565c0" />
+                    <Bar isAnimationActive={false} dataKey="parts" stackId="a" name={t("Parts")} fill="#ef6c00" />
+                    <Bar isAnimationActive={false} dataKey="other" stackId="a" name={t("Other")} fill="#78909c" />
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
@@ -70,15 +71,15 @@ export default function ReportsPage() {
           )}
           <Paper sx={{ overflowX: 'auto' }}>
             <Table size="small">
-              <TableHead><TableRow><TableCell>{groupBy}</TableCell><TableCell align="right">Work orders</TableCell><TableCell align="right">Hours</TableCell>
-                <TableCell align="right">Labor</TableCell><TableCell align="right">Parts</TableCell><TableCell align="right">Other</TableCell><TableCell align="right">Total</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>{t(({ asset: 'Asset', category: 'Asset category', employee: 'Employee (labor)', month: 'Month', type: 'Cost type', workorder: 'Work order' } as Record<string, string>)[groupBy])}</TableCell><TableCell align="right">{t("Work orders")}</TableCell><TableCell align="right">{t("Hours")}</TableCell>
+                <TableCell align="right">{t("Labor")}</TableCell><TableCell align="right">{t("Parts")}</TableCell><TableCell align="right">{t("Other")}</TableCell><TableCell align="right">{t("Total")}</TableCell></TableRow></TableHead>
               <TableBody>
                 {sp.map((r) => (
                   <TableRow key={r.label}><TableCell>{r.label}</TableCell><TableCell align="right">{r.workOrders}</TableCell><TableCell align="right">{num(r.hours)}</TableCell>
                     <TableCell align="right">{money(r.labor)}</TableCell><TableCell align="right">{money(r.parts)}</TableCell>
                     <TableCell align="right">{money(r.other)}</TableCell><TableCell align="right"><b>{money(r.total)}</b></TableCell></TableRow>
                 ))}
-                <TableRow><TableCell><b>Total</b></TableCell><TableCell /><TableCell align="right"><b>{num(sum(sp, 'hours'))}</b></TableCell>
+                <TableRow><TableCell><b>{t("Total")}</b></TableCell><TableCell /><TableCell align="right"><b>{num(sum(sp, 'hours'))}</b></TableCell>
                   <TableCell align="right"><b>{money(sum(sp, 'labor'))}</b></TableCell><TableCell align="right"><b>{money(sum(sp, 'parts'))}</b></TableCell>
                   <TableCell align="right"><b>{money(sum(sp, 'other'))}</b></TableCell><TableCell align="right"><b>{money(sum(sp, 'total'))}</b></TableCell></TableRow>
               </TableBody>
@@ -90,14 +91,14 @@ export default function ReportsPage() {
       {tab === 1 && (
         <Paper sx={{ overflowX: 'auto' }}>
           <Table size="small">
-            <TableHead><TableRow><TableCell>Employee</TableCell><TableCell>Trade</TableCell><TableCell align="right">Work orders</TableCell>
-              <TableCell align="right">Hours</TableCell><TableCell align="right">Labor cost</TableCell></TableRow></TableHead>
+            <TableHead><TableRow><TableCell>{t("Employee")}</TableCell><TableCell>{t("Trade")}</TableCell><TableCell align="right">{t("Work orders")}</TableCell>
+              <TableCell align="right">{t("Hours")}</TableCell><TableCell align="right">{t("Labor cost")}</TableCell></TableRow></TableHead>
             <TableBody>
               {(labor.data ?? []).map((r) => (
                 <TableRow key={r.employee}><TableCell>{r.employee}</TableCell><TableCell>{r.trade}</TableCell><TableCell align="right">{r.workOrders}</TableCell>
                   <TableCell align="right">{num(r.hours)}</TableCell><TableCell align="right">{money(r.cost)}</TableCell></TableRow>
               ))}
-              {!labor.data?.length && <TableRow><TableCell colSpan={5}>No labor recorded in this period.</TableCell></TableRow>}
+              {!labor.data?.length && <TableRow><TableCell colSpan={5}>{t("No labor recorded in this period.")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </Paper>
@@ -106,14 +107,14 @@ export default function ReportsPage() {
       {tab === 2 && (
         <Paper sx={{ overflowX: 'auto' }}>
           <Table size="small">
-            <TableHead><TableRow><TableCell>Part #</TableCell><TableCell>Name</TableCell><TableCell align="right">Qty used</TableCell>
-              <TableCell align="right">Cost</TableCell><TableCell align="right">Work orders</TableCell><TableCell align="right">On hand now</TableCell></TableRow></TableHead>
+            <TableHead><TableRow><TableCell>{t("Part #")}</TableCell><TableCell>{t("Name")}</TableCell><TableCell align="right">{t("Qty used")}</TableCell>
+              <TableCell align="right">{t("Cost")}</TableCell><TableCell align="right">{t("Work orders")}</TableCell><TableCell align="right">{t("On hand now")}</TableCell></TableRow></TableHead>
             <TableBody>
               {(parts.data ?? []).map((r) => (
                 <TableRow key={r.partNo}><TableCell>{r.partNo}</TableCell><TableCell>{r.name}</TableCell><TableCell align="right">{num(r.qty)} {r.unit}</TableCell>
                   <TableCell align="right">{money(r.cost)}</TableCell><TableCell align="right">{r.workOrders}</TableCell><TableCell align="right">{num(r.onHand)}</TableCell></TableRow>
               ))}
-              {!parts.data?.length && <TableRow><TableCell colSpan={6}>No parts used in this period.</TableCell></TableRow>}
+              {!parts.data?.length && <TableRow><TableCell colSpan={6}>{t("No parts used in this period.")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </Paper>
@@ -122,7 +123,7 @@ export default function ReportsPage() {
       {tab === 3 && (
         <Paper sx={{ p: 2 }}>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            The report worker builds a PDF and Excel spending pack on the 1st of every month. Files appear here.
+            {t("The report worker builds a PDF and Excel spending pack on the 1st of every month. Files appear here.")}
           </Typography>
           <Table size="small">
             <TableBody>
@@ -132,7 +133,7 @@ export default function ReportsPage() {
                   <TableCell>{num(f.size / 1024)} KB</TableCell><TableCell>{dateTime(f.modified)}</TableCell>
                 </TableRow>
               ))}
-              {!files.data?.length && <TableRow><TableCell>No report files yet.</TableCell></TableRow>}
+              {!files.data?.length && <TableRow><TableCell>{t("No report files yet.")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </Paper>

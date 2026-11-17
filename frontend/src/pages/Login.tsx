@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+import LanguageSwitch from '../components/LanguageSwitch';
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
@@ -21,12 +23,15 @@ export default function LoginPage() {
   return (
     <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="background.default" p={2}>
       <Paper component="form" onSubmit={submit} sx={{ p: 4, width: '100%', maxWidth: 380 }}>
-        <Typography variant="h5" fontWeight={600} gutterBottom>Maintenance Manager</Typography>
-        <Typography color="text.secondary" mb={3}>Sign in to continue</Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h5" fontWeight={600} gutterBottom>{t("Maintenance Manager")}</Typography>
+          <LanguageSwitch />
+        </Box>
+        <Typography color="text.secondary" mb={3}>{t("Sign in to continue")}</Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        <TextField label="Username" fullWidth margin="normal" autoFocus value={username} onChange={(e) => setUsername(e.target.value)} />
-        <TextField label="Password" type="password" fullWidth margin="normal" value={password} onChange={(e) => setPassword(e.target.value)} />
-        <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2 }} disabled={busy}>Sign in</Button>
+        <TextField label={t("Username")} fullWidth margin="normal" autoFocus value={username} onChange={(e) => setUsername(e.target.value)} />
+        <TextField label={t("Password")} type="password" fullWidth margin="normal" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Button type="submit" variant="contained" fullWidth size="large" sx={{ mt: 2 }} disabled={busy}>{t("Sign in")}</Button>
       </Paper>
     </Box>
   );

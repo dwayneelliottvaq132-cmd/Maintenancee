@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { useNavigate } from 'react-router-dom';
 import { Button, Paper, Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import { useAuth } from '../auth';
@@ -9,12 +10,12 @@ export default function InstructionsPage() {
   const { instructions } = useLookups();
   return (
     <>
-      <PageHeader title="Work instructions" subtitle="Step-by-step procedures attached to PM schedules and work orders"
-        actions={isSupervisor && <Button variant="contained" onClick={() => nav('/instructions/new')}>New instruction</Button>} />
+      <PageHeader title={t("Work instructions")} subtitle={t("Step-by-step procedures attached to PM schedules and work orders")}
+        actions={isSupervisor && <Button variant="contained" onClick={() => nav('/instructions/new')}>{t("New instruction")}</Button>} />
       <Paper sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead><TableRow><TableCell>Title</TableCell><TableCell>Version</TableCell><TableCell>Est. time</TableCell>
-            <TableCell>PPE</TableCell><TableCell>Updated</TableCell></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>{t("Title")}</TableCell><TableCell>{t("Version")}</TableCell><TableCell>{t("Est. time")}</TableCell>
+            <TableCell>{t("PPE")}</TableCell><TableCell>{t("Updated")}</TableCell></TableRow></TableHead>
           <TableBody>
             {instructions.map((i) => (
               <TableRow key={i.id} hover sx={{ cursor: 'pointer' }} onClick={() => nav(`/instructions/${i.id}`)}>
@@ -23,7 +24,7 @@ export default function InstructionsPage() {
                 <TableCell>{i.requiredPpe}</TableCell><TableCell>{dateTime(i.updatedAt)}</TableCell>
               </TableRow>
             ))}
-            {!instructions.length && <TableRow><TableCell colSpan={5}>No work instructions yet.</TableCell></TableRow>}
+            {!instructions.length && <TableRow><TableCell colSpan={5}>{t("No work instructions yet.")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Paper>

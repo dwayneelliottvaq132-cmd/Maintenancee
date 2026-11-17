@@ -1,3 +1,4 @@
+import { t, tEnum } from '../i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -31,39 +32,39 @@ export default function WorkOrdersPage() {
 
   return (
     <>
-      <PageHeader title="Work orders" actions={<Button variant="contained" onClick={() => setParams({ new: '1' })}>New work order</Button>} />
+      <PageHeader title={t("Work orders")} actions={<Button variant="contained" onClick={() => setParams({ new: '1' })}>{t("New work order")}</Button>} />
       <Stack direction={{ xs: 'column', md: 'row' }} gap={2} mb={2} alignItems={{ md: 'center' }} flexWrap="wrap">
-        <TextField size="small" label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
-        <TextField size="small" select label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 160 }}>
-          <MenuItem value="">Any</MenuItem>{STATUSES.map((s) => <MenuItem key={s} value={s}>{s.replace('_', ' ')}</MenuItem>)}
+        <TextField size="small" label={t("Search")} value={q} onChange={(e) => setQ(e.target.value)} />
+        <TextField size="small" select label={t("Status")} value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 160 }}>
+          <MenuItem value="">{t("Any")}</MenuItem>{STATUSES.map((s) => <MenuItem key={s} value={s}>{tEnum(s)}</MenuItem>)}
         </TextField>
-        <TextField size="small" select label="Type" value={type} onChange={(e) => setType(e.target.value)} sx={{ minWidth: 140 }}>
-          <MenuItem value="">Any</MenuItem>{['PM', 'CORRECTIVE', 'REQUEST'].map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+        <TextField size="small" select label={t("Type")} value={type} onChange={(e) => setType(e.target.value)} sx={{ minWidth: 140 }}>
+          <MenuItem value="">{t("Any")}</MenuItem>{['PM', 'CORRECTIVE', 'REQUEST'].map((s) => <MenuItem key={s} value={s}>{tEnum(s)}</MenuItem>)}
         </TextField>
-        <FormControlLabel control={<Switch checked={mine} onChange={(e) => setMine(e.target.checked)} />} label="Assigned to me" />
-        <FormControlLabel control={<Switch checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />} label="Include closed" />
+        <FormControlLabel control={<Switch checked={mine} onChange={(e) => setMine(e.target.checked)} />} label={t("Assigned to me")} />
+        <FormControlLabel control={<Switch checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />} label={t("Include closed")} />
         <ToggleButtonGroup size="small" exclusive value={view} onChange={(_, v) => v && setView(v)}>
-          <ToggleButton value="list">List</ToggleButton><ToggleButton value="board">Board</ToggleButton>
+          <ToggleButton value="list">{t("List")}</ToggleButton><ToggleButton value="board">{t("Board")}</ToggleButton>
         </ToggleButtonGroup>
       </Stack>
 
       {view === 'list' ? (
         <Paper sx={{ overflowX: 'auto' }}>
           <Table size="small">
-            <TableHead><TableRow><TableCell>WO</TableCell><TableCell>Title</TableCell><TableCell>Asset</TableCell><TableCell>Type</TableCell>
-              <TableCell>Priority</TableCell><TableCell>Status</TableCell><TableCell>Assigned</TableCell><TableCell>Due</TableCell><TableCell align="right">Cost</TableCell></TableRow></TableHead>
+            <TableHead><TableRow><TableCell>{t("WO")}</TableCell><TableCell>{t("Title")}</TableCell><TableCell>{t("Asset")}</TableCell><TableCell>{t("Type")}</TableCell>
+              <TableCell>{t("Priority")}</TableCell><TableCell>{t("Status")}</TableCell><TableCell>{t("Assigned")}</TableCell><TableCell>{t("Due")}</TableCell><TableCell align="right">{t("Cost")}</TableCell></TableRow></TableHead>
             <TableBody>
               {rows.map((w) => (
                 <TableRow key={w.id} hover sx={{ cursor: 'pointer' }} onClick={() => nav(`/work-orders/${w.id}`)}>
                   <TableCell><b>{w.number}</b></TableCell><TableCell>{w.title}</TableCell>
-                  <TableCell>{w.assetTag}</TableCell><TableCell>{w.type}</TableCell>
+                  <TableCell>{w.assetTag}</TableCell><TableCell>{tEnum(w.type)}</TableCell>
                   <TableCell><StatusChip value={w.priority} /></TableCell><TableCell><StatusChip value={w.status} /></TableCell>
                   <TableCell>{w.assignees}</TableCell>
                   <TableCell sx={{ color: w.overdue ? 'error.main' : undefined, fontWeight: w.overdue ? 600 : undefined }}>{date(w.dueDate)}</TableCell>
                   <TableCell align="right">{money(w.totalCost)}</TableCell>
                 </TableRow>
               ))}
-              {!rows.length && <TableRow><TableCell colSpan={9}>No work orders match.</TableCell></TableRow>}
+              {!rows.length && <TableRow><TableCell colSpan={9}>{t("No work orders match.")}</TableCell></TableRow>}
             </TableBody>
           </Table>
         </Paper>
@@ -71,7 +72,7 @@ export default function WorkOrdersPage() {
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr', lg: 'repeat(4, 1fr)' }} gap={2}>
           {['OPEN', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].map((s) => (
             <Box key={s} sx={{ bgcolor: 'grey.100', borderRadius: 2, p: 1 }}>
-              <Typography fontWeight={600} p={1}>{s.replace('_', ' ')} ({rows.filter((w) => w.status === s).length})</Typography>
+              <Typography fontWeight={600} p={1}>{tEnum(s)} ({rows.filter((w) => w.status === s).length})</Typography>
               {rows.filter((w) => w.status === s).map((w) => (
                 <Card key={w.id} sx={{ mb: 1 }}>
                   <CardActionArea onClick={() => nav(`/work-orders/${w.id}`)}>
@@ -80,7 +81,7 @@ export default function WorkOrdersPage() {
                       <Typography fontWeight={500}>{w.title}</Typography>
                       <Stack direction="row" gap={1} mt={0.5} alignItems="center">
                         <StatusChip value={w.priority} />
-                        <Typography variant="caption" color={w.overdue ? 'error' : 'text.secondary'}>Due {date(w.dueDate)}</Typography>
+                        <Typography variant="caption" color={w.overdue ? 'error' : 'text.secondary'}>{t("Due")} {date(w.dueDate)}</Typography>
                       </Stack>
                       {w.assignees && <Typography variant="caption" display="block">{w.assignees}</Typography>}
                     </CardContent>
@@ -92,16 +93,16 @@ export default function WorkOrdersPage() {
         </Box>
       )}
 
-      <FormDialog open={creating} title="New work order" initial={initial} onClose={() => setParams({})} submitLabel="Create"
+      <FormDialog open={creating} title={t("New work order")} initial={initial} onClose={() => setParams({})} submitLabel={t("Create")}
         fields={[
-          { name: 'title', label: 'What needs to be done?', required: true },
-          { name: 'description', label: 'Details', type: 'textarea' },
-          { name: 'assetId', label: 'Asset', type: 'autocomplete', options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
-          { name: 'type', label: 'Type', type: 'select', half: true, options: enumOpts('CORRECTIVE', 'PM') },
-          { name: 'priority', label: 'Priority', type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
-          { name: 'dueDate', label: 'Due date', type: 'date', half: true },
-          { name: 'instructionId', label: 'Work instruction', type: 'select', half: true, options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
-          { name: 'assigneeId', label: 'Assign to', type: 'select',
+          { name: 'title', label: t("What needs to be done?"), required: true },
+          { name: 'description', label: t("Details"), type: 'textarea' },
+          { name: 'assetId', label: t("Asset"), type: 'autocomplete', options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
+          { name: 'type', label: t("Type"), type: 'select', half: true, options: enumOpts('CORRECTIVE', 'PM') },
+          { name: 'priority', label: t("Priority"), type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
+          { name: 'dueDate', label: t("Due date"), type: 'date', half: true },
+          { name: 'instructionId', label: t("Work instruction"), type: 'select', half: true, options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
+          { name: 'assigneeId', label: t("Assign to"), type: 'select',
             options: opts(lk.users.filter((u) => u.active && u.role !== 'REQUESTER'), (u) => u.id, (u) => `${u.fullName}${u.trade ? ' (' + u.trade + ')' : ''}`) },
         ]}
         onSubmit={async (v: any) => {

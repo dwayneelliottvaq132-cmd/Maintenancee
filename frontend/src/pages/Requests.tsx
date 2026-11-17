@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -29,18 +30,18 @@ export default function RequestsPage() {
 
   return (
     <>
-      <PageHeader title="Maintenance requests" subtitle="Report a problem. A supervisor reviews it and turns it into a work order."
-        actions={<Button variant="contained" onClick={() => setParams({ new: '1' })}>New request</Button>} />
+      <PageHeader title={t("Maintenance requests")} subtitle={t("Report a problem. A supervisor reviews it and turns it into a work order.")}
+        actions={<Button variant="contained" onClick={() => setParams({ new: '1' })}>{t("New request")}</Button>} />
       {notice && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setNotice(null)}>{notice}</Alert>}
       {isSupervisor && (
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-          <Tab label={`Awaiting review (${data.filter((r) => r.status === 'NEW').length})`} /><Tab label="All requests" />
+          <Tab label={t('Awaiting review ({n})', { n: data.filter((r) => r.status === 'NEW').length })} /><Tab label={t("All requests")} />
         </Tabs>
       )}
       <Paper sx={{ overflowX: 'auto' }}>
         <Table size="small">
-          <TableHead><TableRow><TableCell>#</TableCell><TableCell>Problem</TableCell><TableCell>Asset / location</TableCell>
-            <TableCell>Priority</TableCell><TableCell>Requested by</TableCell><TableCell>Submitted</TableCell><TableCell>Status</TableCell><TableCell /></TableRow></TableHead>
+          <TableHead><TableRow><TableCell>#</TableCell><TableCell>{t("Problem")}</TableCell><TableCell>{t("Asset / location")}</TableCell>
+            <TableCell>{t("Priority")}</TableCell><TableCell>{t("Requested by")}</TableCell><TableCell>{t("Submitted")}</TableCell><TableCell>{t("Status")}</TableCell><TableCell /></TableRow></TableHead>
           <TableBody>
             {rows.map((r) => {
               const asset = r.assetId ? lk.assetById.get(r.assetId) : undefined;
@@ -48,7 +49,7 @@ export default function RequestsPage() {
                 <TableRow key={r.id}>
                   <TableCell>{r.id}</TableCell>
                   <TableCell><b>{r.title}</b>{r.description && <Typography variant="body2" color="text.secondary">{r.description}</Typography>}
-                    {r.reviewNotes && <Typography variant="body2" color={r.status === 'REJECTED' ? 'error' : 'text.secondary'}>Reviewer: {r.reviewNotes}</Typography>}</TableCell>
+                    {r.reviewNotes && <Typography variant="body2" color={r.status === 'REJECTED' ? 'error' : 'text.secondary'}>{t("Reviewer:")} {r.reviewNotes}</Typography>}</TableCell>
                   <TableCell>{asset ? `${asset.tag} — ${asset.name}` : lk.locationById.get(r.locationId!)?.name ?? '—'}</TableCell>
                   <TableCell><StatusChip value={r.priority} /></TableCell>
                   <TableCell>{lk.userById.get(r.requesterId)?.fullName}</TableCell>
@@ -56,44 +57,44 @@ export default function RequestsPage() {
                   <TableCell><StatusChip value={r.status} /></TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     {r.status === 'NEW' && isSupervisor && <>
-                      <Button size="small" variant="contained" onClick={() => setReview({ r, mode: 'approve' })}>Approve</Button>{' '}
-                      <Button size="small" color="error" onClick={() => setReview({ r, mode: 'reject' })}>Reject</Button>
+                      <Button size="small" variant="contained" onClick={() => setReview({ r, mode: 'approve' })}>{t("Approve")}</Button>{' '}
+                      <Button size="small" color="error" onClick={() => setReview({ r, mode: 'reject' })}>{t("Reject")}</Button>
                     </>}
-                    {r.workOrderId && isStaff && <Button size="small" onClick={() => nav(`/work-orders/${r.workOrderId}`)}>View work order</Button>}
+                    {r.workOrderId && isStaff && <Button size="small" onClick={() => nav(`/work-orders/${r.workOrderId}`)}>{t("View work order")}</Button>}
                   </TableCell>
                 </TableRow>
               );
             })}
-            {!rows.length && <TableRow><TableCell colSpan={8}>No requests.</TableCell></TableRow>}
+            {!rows.length && <TableRow><TableCell colSpan={8}>{t("No requests.")}</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Paper>
 
-      <FormDialog open={creating} title="New maintenance request" submitLabel="Submit request" initial={blank} onClose={() => setParams({})}
+      <FormDialog open={creating} title={t("New maintenance request")} submitLabel={t("Submit request")} initial={blank} onClose={() => setParams({})}
         fields={[
-          { name: 'title', label: 'What is the problem?', required: true },
-          { name: 'description', label: 'Details (where, when it started, anything unsafe?)', type: 'textarea' },
-          { name: 'assetId', label: 'Equipment (if known)', type: 'autocomplete', options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
-          { name: 'locationId', label: 'Location', type: 'select', half: true, options: opts(lk.locations, (l) => l.id, (l) => l.name) },
-          { name: 'priority', label: 'Priority', type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
+          { name: 'title', label: t("What is the problem?"), required: true },
+          { name: 'description', label: t("Details (where, when it started, anything unsafe?)"), type: 'textarea' },
+          { name: 'assetId', label: t("Equipment (if known)"), type: 'autocomplete', options: opts(lk.assets, (a) => a.id, (a) => `${a.tag} — ${a.name}`) },
+          { name: 'locationId', label: t("Location"), type: 'select', half: true, options: opts(lk.locations, (l) => l.id, (l) => l.name) },
+          { name: 'priority', label: t("Priority"), type: 'select', half: true, options: enumOpts('LOW', 'MEDIUM', 'HIGH', 'URGENT') },
         ]}
-        onSubmit={async (v) => { await api.post('/requests', v); setNotice('Request submitted. You can track its status here.'); reload(); }} />
+        onSubmit={async (v) => { await api.post('/requests', v); setNotice(t('Request submitted. You can track its status here.')); reload(); }} />
 
-      <FormDialog open={review?.mode === 'approve'} title={`Approve: ${review?.r.title ?? ''}`} submitLabel="Approve & create work order"
+      <FormDialog open={review?.mode === 'approve'} title={`${t('Approve')}: ${review?.r.title ?? ''}`} submitLabel={t("Approve & create work order")}
         initial={{}} onClose={() => setReview(null)}
         fields={[
-          { name: 'assigneeId', label: 'Assign to', type: 'select', options: opts(staff, (u) => u.id, (u) => u.fullName) },
-          { name: 'dueDate', label: 'Due date', type: 'date', half: true },
-          { name: 'instructionId', label: 'Work instruction', type: 'select', half: true, options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
-          { name: 'notes', label: 'Notes to requester', type: 'textarea' },
+          { name: 'assigneeId', label: t("Assign to"), type: 'select', options: opts(staff, (u) => u.id, (u) => u.fullName) },
+          { name: 'dueDate', label: t("Due date"), type: 'date', half: true },
+          { name: 'instructionId', label: t("Work instruction"), type: 'select', half: true, options: opts(lk.instructions, (i) => i.id, (i) => i.title) },
+          { name: 'notes', label: t("Notes to requester"), type: 'textarea' },
         ]}
         onSubmit={async (v: any) => {
           const { data } = await api.post(`/requests/${review!.r.id}/approve`, { ...v, assigneeIds: v.assigneeId ? [v.assigneeId] : [] });
-          setNotice(`Approved — work order created.`); reload();
+          setNotice(t('Approved — work order created.')); reload();
           if (data.workOrderId) nav(`/work-orders/${data.workOrderId}`);
         }} />
-      <FormDialog open={review?.mode === 'reject'} title={`Reject: ${review?.r.title ?? ''}`} submitLabel="Reject" initial={{}} onClose={() => setReview(null)}
-        fields={[{ name: 'notes', label: 'Reason (shown to requester)', type: 'textarea', required: true }]}
+      <FormDialog open={review?.mode === 'reject'} title={`${t('Reject')}: ${review?.r.title ?? ''}`} submitLabel={t("Reject")} initial={{}} onClose={() => setReview(null)}
+        fields={[{ name: 'notes', label: t("Reason (shown to requester)"), type: 'textarea', required: true }]}
         onSubmit={async (v) => { await api.post(`/requests/${review!.r.id}/reject`, v); reload(); }} />
     </>
   );
