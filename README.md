@@ -46,6 +46,26 @@ the server, and run `sudo ./deploy/install.sh --no-build`.
 Useful commands: `systemctl status cmms-api`, `journalctl -u cmms-api -f`, `systemctl list-timers 'cmms-*'`.
 To run a job now: `sudo systemctl start cmms-pm`.
 
+## Install on a Windows PC (desktop icon)
+
+Prerequisites: Java 21, Maven, Node.js, and PostgreSQL with a database `cmms` owned by user `cmms` (password `cmms`).
+From the `maintenance-app` folder in PowerShell:
+
+```bash
+powershell -ExecutionPolicy Bypass -File windows\setup.ps1
+```
+
+This builds the app, installs it to `%LOCALAPPDATA%\MaintenanceManager`, and creates a **Maintenance Manager** icon on
+the Desktop and in the Start menu. The icon starts the server in the background if it isn't already running, then
+opens the app in its own window. Use **Stop Maintenance Manager** in the Start menu to shut the server down.
+
+- Add `-StartWithWindows` to start the server automatically when you log in.
+- Settings (database password, port, network access) are in `%LOCALAPPDATA%\MaintenanceManager\config.ps1`.
+  Logs are in the `logs` folder next to it.
+- To upgrade, run setup again; settings and data are kept. Run `-Uninstall` to remove the icons and program files.
+- The Windows install doesn't run the scheduled Python jobs. Use **Generate due now** on the PM Schedules page,
+  or run the worker by hand.
+
 ## Roles
 - **Requester:** places maintenance requests and sees their status.
 - **Technician:** works the jobs: checks off instruction steps, logs hours, uses parts, marks work complete, records meter readings.
