@@ -15,4 +15,5 @@ public class InstructionStep {
     public int seq;
     public String text;
     public boolean requiresCheck = true;
+    public boolean active = true;
 }

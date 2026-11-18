@@ -2,7 +2,7 @@
 """Load realistic demo data through the API (for trying the system out; don't run on production).
 
 Usage: seed_demo.py [base_url] [admin_username] [admin_password]
-Creates users with password 'Demo1234!' (they must change it at first login).
+Creates demo users with password 'Demo1234!'.
 """
 import datetime as dt
 import json
@@ -52,7 +52,10 @@ def main():
     for un, name, role, rate, trade, email in people:
         if un not in existing:
             call("POST", "/users", {"username": un, "fullName": name, "role": role, "hourlyRate": rate,
-                                    "trade": trade, "email": email, "password": PW}, admin)
+                                    "trade": trade, "email": email, "password": "Temp-" + PW}, admin)
+            # demo accounts skip the first-login password change so they can be used straight away
+            tmp = login(un, "Temp-" + PW)
+            call("POST", "/auth/password", {"currentPassword": "Temp-" + PW, "newPassword": PW}, tmp)
     users = {u["username"]: u for u in call("GET", "/users", token=admin)}
     sup = admin  # admin can do everything a supervisor can
 

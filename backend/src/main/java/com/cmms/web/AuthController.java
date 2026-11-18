@@ -44,13 +44,24 @@ public class AuthController {
         return users.findById(Current.user().id()).orElseThrow();
     }
 
+    /** Changes the password, signs out every other session, and returns a fresh token for this one. */
     @PostMapping("/password")
-    public void changePassword(@Valid @RequestBody PasswordIn in) {
+    public LoginOut changePassword(@Valid @RequestBody PasswordIn in) {
         User u = users.findById(Current.user().id()).orElseThrow();
         if (!encoder.matches(in.currentPassword(), u.passwordHash)) throw ApiException.bad("Current password is incorrect");
+        if (encoder.matches(in.newPassword(), u.passwordHash)) throw ApiException.bad("Choose a password different from the current one");
         u.passwordHash = encoder.encode(in.newPassword());
         u.mustChangePassword = false;
+        u.tokenVersion++;
         users.save(u);
         audit.log("user", u.id, "PASSWORD", null);
+        return new LoginOut(jwt.issue(u), u);
+    }
+
+    /** Short-lived token for opening a file download in a new tab (the URL can't carry a header). */
+    @PostMapping("/download-token")
+    public java.util.Map<String, String> downloadToken() {
+        User u = users.findById(Current.user().id()).orElseThrow();
+        return java.util.Map.of("token", jwt.issueDownload(u));
     }
 }

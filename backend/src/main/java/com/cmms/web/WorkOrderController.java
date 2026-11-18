@@ -39,7 +39,7 @@ public class WorkOrderController {
     }
 
     @GetMapping("/{id}")
-    public Detail get(@PathVariable Long id) { return service.detail(id); }
+    public Detail get(@PathVariable Long id) { return service.detail(id, Current.user().isSupervisor()); }
 
     @PostMapping
     public WorkOrder create(@RequestBody CreateIn in) {
@@ -48,7 +48,7 @@ public class WorkOrderController {
 
     @PutMapping("/{id}")
     @PreAuthorize(Roles.SUPERVISOR)
-    public WorkOrder update(@PathVariable Long id, @RequestBody WorkOrder in) { return service.update(id, in); }
+    public WorkOrder update(@PathVariable Long id, @RequestBody Map<String, Object> changes) { return service.update(id, changes); }
 
     @PostMapping("/{id}/assign")
     @PreAuthorize(Roles.SUPERVISOR)
@@ -60,7 +60,7 @@ public class WorkOrderController {
     @PutMapping("/{id}/steps/{stepId}")
     public Detail step(@PathVariable Long id, @PathVariable Long stepId, @RequestBody StepIn in) {
         service.setStep(id, stepId, in.done(), in.note(), Current.user());
-        return service.detail(id);
+        return service.detail(id, Current.user().isSupervisor());
     }
 
     @PostMapping("/{id}/labor")

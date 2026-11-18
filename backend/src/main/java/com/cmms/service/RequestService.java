@@ -26,6 +26,10 @@ public class RequestService {
         return requests.findById(id).orElseThrow(() -> ApiException.notFound("Request", id));
     }
 
+    private MaintenanceRequest lock(Long id) {
+        return requests.lockById(id).orElseThrow(() -> ApiException.notFound("Request", id));
+    }
+
     public List<MaintenanceRequest> list(AuthUser user, boolean mineOnly) {
         if (user.isRequesterOnly() || mineOnly) return requests.findByRequesterIdOrderByCreatedAtDesc(user.id());
         return requests.findAllByOrderByCreatedAtDesc();
@@ -51,7 +55,7 @@ public class RequestService {
     @Transactional
     public MaintenanceRequest approve(Long id, String notes, List<Long> assigneeIds, java.time.LocalDate dueDate,
                                       Long instructionId, AuthUser by) {
-        MaintenanceRequest r = get(id);
+        MaintenanceRequest r = lock(id);   // two supervisors approving at once -> only one work order
         if (r.status != RequestStatus.NEW) throw ApiException.conflict("Request has already been " + r.status.name().toLowerCase());
         WorkOrder in = new WorkOrder();
         in.title = r.title;
@@ -63,7 +67,7 @@ public class RequestService {
         in.requestId = r.id;
         in.dueDate = dueDate;
         in.instructionId = instructionId;
-        WorkOrder wo = woService.create(in, assigneeIds, by.id());
+        WorkOrder wo = woService.createLinked(in, assigneeIds, by.id());
         r.status = RequestStatus.APPROVED;
         r.reviewedBy = by.id();
         r.reviewedAt = OffsetDateTime.now();
@@ -75,7 +79,7 @@ public class RequestService {
 
     @Transactional
     public MaintenanceRequest reject(Long id, String notes, AuthUser by) {
-        MaintenanceRequest r = get(id);
+        MaintenanceRequest r = lock(id);
         if (r.status != RequestStatus.NEW) throw ApiException.conflict("Request has already been " + r.status.name().toLowerCase());
         if (notes == null || notes.isBlank()) throw ApiException.bad("Give a reason for rejecting the request");
         r.status = RequestStatus.REJECTED;

@@ -32,8 +32,14 @@ def login(u, p):
 def main():
     admin = login("admin", ADMIN_PW)
     pw = "Passw0rd!x"
-    mk = lambda name, role, rate: call("POST", "/api/users", {"username": f"{name}{SFX}", "fullName": f"{name.title()} {SFX}",
-                                                               "role": role, "hourlyRate": rate, "password": pw}, admin)
+    def mk(name, role, rate):
+        # new users get a temporary password and must change it before using the app (enforced by the server)
+        u = call("POST", "/api/users", {"username": f"{name}{SFX}", "fullName": f"{name.title()} {SFX}",
+                                        "role": role, "hourlyRate": rate, "password": "Temp-" + pw}, admin)
+        tmp = login(u["username"], "Temp-" + pw)
+        call("GET", "/api/work-orders", token=tmp, expect=403)
+        call("POST", "/api/auth/password", {"currentPassword": "Temp-" + pw, "newPassword": pw}, tmp)
+        return u
     sup, tech, reqr = mk("sup", "SUPERVISOR", 45), mk("tech", "TECHNICIAN", 30), mk("req", "REQUESTER", 0)
     sup_t, tech_t, req_t = login(sup["username"], pw), login(tech["username"], pw), login(reqr["username"], pw)
 
@@ -67,6 +73,7 @@ def main():
     call("POST", f"/api/work-orders/{wo['id']}/parts", {"partId": part["id"], "qty": 500}, tech_t, expect=409)
     call("POST", f"/api/work-orders/{wo['id']}/costs", {"description": "Contractor callout", "amount": 100}, tech_t)
     call("POST", f"/api/work-orders/{wo['id']}/complete", {"notes": "All good", "meterReading": 1200}, tech_t)
+    call("POST", f"/api/work-orders/{wo['id']}/labor", {"hours": 1}, tech_t, expect=409)   # frozen once completed
     call("POST", f"/api/work-orders/{wo['id']}/sign-off", {"signatureName": "Sup"}, tech_t, expect=403)
     signed = call("POST", f"/api/work-orders/{wo['id']}/sign-off", {"signatureName": sup["fullName"]}, sup_t)
     assert signed["status"] == "SIGNED_OFF"

@@ -4,10 +4,12 @@ import com.cmms.security.Current;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/dashboard")
+@PreAuthorize(Roles.STAFF)
 public class DashboardController {
     private final JdbcTemplate jdbc;
 
@@ -17,8 +19,11 @@ public class DashboardController {
     public Map<String, Object> dashboard() {
         Long me = Current.user().id();
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("counts", AssetController.camel(jdbc.queryForMap(COUNTS, me)));
-        out.put("monthlySpend", jdbc.queryForList("""
+        Map<String, Object> counts = AssetController.camel(jdbc.queryForMap(COUNTS, me));
+        boolean supervisor = Current.user().isSupervisor();
+        if (!supervisor) { counts.remove("spendThisMonth"); counts.remove("spendThisYear"); }
+        out.put("counts", counts);
+        if (supervisor) out.put("monthlySpend", jdbc.queryForList("""
             SELECT to_char(m, 'YYYY-MM') AS month,
                    COALESCE(SUM(c.amount) FILTER (WHERE c.cost_type = 'LABOR'), 0) AS labor,
                    COALESCE(SUM(c.amount) FILTER (WHERE c.cost_type = 'PARTS'), 0) AS parts,

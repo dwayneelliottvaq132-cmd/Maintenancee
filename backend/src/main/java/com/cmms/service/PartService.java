@@ -11,6 +11,11 @@ import java.math.RoundingMode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * All stock changes lock the part row first (SELECT ... FOR UPDATE), so two people using or receiving
+ * the same part at the same moment can't overwrite each other's quantity. The database also refuses
+ * negative stock (chk_parts_qty_nonneg).
+ */
 @Service
 public class PartService {
     private final PartRepository parts;
@@ -25,14 +30,22 @@ public class PartService {
         return parts.findById(id).orElseThrow(() -> ApiException.notFound("Part", id));
     }
 
-    /** Receive stock; unit cost becomes the weighted average of old and new stock. */
+    private Part lock(Long id) {
+        return parts.lockById(id).orElseThrow(() -> ApiException.notFound("Part", id));
+    }
+
+    /**
+     * Receive stock. When a unit cost is given, the part's cost becomes the weighted average of the
+     * old and new stock. Pass unitCost = null to keep the current cost.
+     */
     @Transactional
     public Part receive(Long partId, BigDecimal qty, BigDecimal unitCost, String reference, Long userId) {
         if (qty == null || qty.signum() <= 0) throw ApiException.bad("Quantity must be greater than zero");
-        Part p = get(partId);
-        if (unitCost != null && unitCost.signum() >= 0) {
-            BigDecimal oldValue = p.unitCost.multiply(p.qtyOnHand.max(BigDecimal.ZERO));
-            BigDecimal newQty = p.qtyOnHand.max(BigDecimal.ZERO).add(qty);
+        if (unitCost != null && unitCost.signum() < 0) throw ApiException.bad("Unit cost cannot be negative");
+        Part p = lock(partId);
+        if (unitCost != null) {
+            BigDecimal oldValue = p.unitCost.multiply(p.qtyOnHand);
+            BigDecimal newQty = p.qtyOnHand.add(qty);
             p.unitCost = oldValue.add(unitCost.multiply(qty)).divide(newQty, 2, RoundingMode.HALF_UP);
         }
         p.qtyOnHand = p.qtyOnHand.add(qty);
@@ -43,7 +56,7 @@ public class PartService {
     @Transactional
     public Part adjust(Long partId, BigDecimal newQty, String reason, Long userId) {
         if (newQty == null || newQty.signum() < 0) throw ApiException.bad("Counted quantity cannot be negative");
-        Part p = get(partId);
+        Part p = lock(partId);
         BigDecimal diff = newQty.subtract(p.qtyOnHand);
         p.qtyOnHand = newQty;
         record(p.id, StockTxType.ADJUST, diff, p.unitCost, reason, userId);
@@ -53,7 +66,8 @@ public class PartService {
     /** Issue stock to a work order. Fails if not enough on hand. Returns the unit cost used. */
     @Transactional
     public BigDecimal issue(Long partId, BigDecimal qty, String reference, Long userId) {
-        Part p = get(partId);
+        Part p = lock(partId);
+        if (!p.active) throw ApiException.conflict(p.name + " is no longer active");
         if (p.qtyOnHand.compareTo(qty) < 0) {
             throw ApiException.conflict("Not enough " + p.name + " in stock (on hand " + p.qtyOnHand.stripTrailingZeros().toPlainString()
                     + " " + p.unit + ", requested " + qty.stripTrailingZeros().toPlainString() + ")");
@@ -66,7 +80,7 @@ public class PartService {
 
     @Transactional
     public void returnToStock(Long partId, BigDecimal qty, String reference, Long userId) {
-        Part p = get(partId);
+        Part p = lock(partId);
         p.qtyOnHand = p.qtyOnHand.add(qty);
         parts.save(p);
         record(p.id, StockTxType.RETURN, qty, p.unitCost, reference, userId);

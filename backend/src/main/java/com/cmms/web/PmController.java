@@ -7,6 +7,7 @@ import com.cmms.security.Current;
 import com.cmms.service.PmService;
 import java.util.List;
 import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +18,17 @@ public class PmController {
     private final PmScheduleRepository repo;
     private final PmService service;
     private final JdbcTemplate jdbc;
+    private final ObjectMapper mapper;
 
-    public PmController(PmScheduleRepository repo, PmService service, JdbcTemplate jdbc) {
+    public PmController(PmScheduleRepository repo, PmService service, JdbcTemplate jdbc, ObjectMapper mapper) {
+        this.mapper = mapper;
         this.repo = repo;
         this.service = service;
         this.jdbc = jdbc;
     }
 
     @GetMapping
+    @PreAuthorize(Roles.STAFF)
     public List<Map<String, Object>> list() {
         return jdbc.queryForList("""
             SELECT p.*, a.tag AS asset_tag, a.name AS asset_name, a.meter_reading AS asset_meter, a.meter_unit,
@@ -39,6 +43,7 @@ public class PmController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(Roles.STAFF)
     public PmSchedule get(@PathVariable Long id) { return service.get(id); }
 
     @PostMapping
@@ -47,7 +52,17 @@ public class PmController {
 
     @PutMapping("/{id}")
     @PreAuthorize(Roles.SUPERVISOR)
-    public PmSchedule update(@PathVariable Long id, @RequestBody PmSchedule in) { return service.save(id, in); }
+    /** Partial update: fields left out of the request keep their current value. */
+    public PmSchedule update(@PathVariable Long id, @RequestBody Map<String, Object> changes) {
+        PmSchedule merged = service.get(id);
+        changes.remove("id");
+        try {
+            mapper.updateValue(merged, changes);
+        } catch (Exception e) {
+            throw ApiException.bad("Invalid value: " + e.getMessage());
+        }
+        return service.save(id, merged);
+    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize(Roles.SUPERVISOR)

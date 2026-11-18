@@ -32,6 +32,7 @@ public class PartController {
     }
 
     @GetMapping
+    @PreAuthorize(Roles.STAFF)
     public List<Part> list(@RequestParam(defaultValue = "false") boolean lowStock) {
         List<Part> all = repo.findAll(Sort.by("partNo"));
         if (!lowStock) return all;
@@ -39,9 +40,11 @@ public class PartController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize(Roles.STAFF)
     public Part get(@PathVariable Long id) { return service.get(id); }
 
     @GetMapping("/{id}/transactions")
+    @PreAuthorize(Roles.STAFF)
     public List<StockTransaction> transactions(@PathVariable Long id) { return txs.findByPartIdOrderByCreatedAtDesc(id); }
 
     @PostMapping
@@ -49,6 +52,7 @@ public class PartController {
     public Part create(@RequestBody Part in) {
         in.id = null;
         BigDecimal opening = in.qtyOnHand == null ? BigDecimal.ZERO : in.qtyOnHand;
+        if (opening.signum() < 0) throw ApiException.bad("Opening quantity cannot be negative");
         in.qtyOnHand = BigDecimal.ZERO;
         Part p = save(in);
         if (opening.signum() > 0) p = service.receive(p.id, opening, p.unitCost, "Opening balance", Current.user().id());
@@ -69,7 +73,9 @@ public class PartController {
     @PostMapping("/{id}/receive")
     @PreAuthorize(Roles.STAFF)
     public Part receive(@PathVariable Long id, @RequestBody ReceiveIn in) {
-        return service.receive(id, in.qty(), in.unitCost(), in.reference(), Current.user().id());
+        // technicians can book deliveries in, but only supervisors may change what a part costs
+        BigDecimal cost = Current.user().isSupervisor() ? in.unitCost() : null;
+        return service.receive(id, in.qty(), cost, in.reference(), Current.user().id());
     }
 
     @PostMapping("/{id}/adjust")
@@ -83,6 +89,8 @@ public class PartController {
         if (p.name == null || p.name.isBlank()) throw ApiException.bad("Name is required");
         if (p.unitCost == null) p.unitCost = BigDecimal.ZERO;
         if (p.reorderPoint == null) p.reorderPoint = BigDecimal.ZERO;
+        if (p.unitCost.signum() < 0) throw ApiException.bad("Unit cost cannot be negative");
+        if (p.reorderPoint.signum() < 0) throw ApiException.bad("Reorder point cannot be negative");
         if (p.unit == null || p.unit.isBlank()) p.unit = "ea";
         return repo.save(p);
     }

@@ -20,5 +20,6 @@ public class User {
     public String trade;
     public boolean active = true;
     public boolean mustChangePassword;
+    @JsonIgnore public int tokenVersion;
     @Column(insertable = false, updatable = false) public OffsetDateTime createdAt;
 }

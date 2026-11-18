@@ -1,6 +1,6 @@
 server:
   port: ${CMMS_PORT:8080}
-  address: ${CMMS_BIND:0.0.0.0}
+  address: ${CMMS_BIND:127.0.0.1}
   servlet:
     context-path: /
 spring:
@@ -32,6 +32,8 @@ cmms:
   upload-dir: ${CMMS_UPLOAD_DIR:./data/uploads}
   report-dir: ${CMMS_REPORT_DIR:./data/reports}
   admin-password: ${CMMS_ADMIN_PASSWORD:admin123}
+  # Generate PM work orders inside the API (used on Windows, where there is no Python worker timer)
+  pm-scheduler: ${CMMS_PM_SCHEDULER:false}
 springdoc:
   api-docs:
     path: /api/docs/openapi

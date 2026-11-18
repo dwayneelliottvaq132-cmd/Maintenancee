@@ -42,5 +42,5 @@ public class InstructionController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize(Roles.SUPERVISOR)
-    public void delete(@PathVariable Long id) { repo.deleteById(id); }
+    public void delete(@PathVariable Long id) { service.delete(id); }
 }

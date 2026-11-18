@@ -36,8 +36,13 @@ public class ErrorHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<Map<String, Object>> integrity(DataIntegrityViolationException e) {
         log.warn("Integrity violation: {}", e.getMostSpecificCause().getMessage());
-        return body(HttpStatus.CONFLICT, "Conflicts with existing data (duplicate or in use): "
-                + e.getMostSpecificCause().getMessage());
+        // details stay in the server log; the user gets a plain explanation without database internals
+        String detail = String.valueOf(e.getMostSpecificCause().getMessage());
+        String msg = detail.contains("duplicate key") ? "That value is already used by another record"
+                : detail.contains("violates foreign key") ? "This record is still in use by other records"
+                : detail.contains("violates check constraint") ? "A value is out of the allowed range"
+                : "Conflicts with existing data (duplicate or in use)";
+        return body(HttpStatus.CONFLICT, msg);
     }
 
     private ResponseEntity<Map<String, Object>> body(HttpStatus s, String msg) {
