@@ -15,9 +15,15 @@ apt-get update -q
 apt-get install -y -q openjdk-21-jre-headless postgresql nginx python3 python3-venv python3-pip curl
 if [[ $BUILD -eq 1 ]]; then
   apt-get install -y -q openjdk-21-jdk-headless maven
-  if ! command -v node >/dev/null || [[ "$(node -p 'process.versions.node.split(".")[0]')" -lt 18 ]]; then
-    apt-get install -y -q nodejs npm
+  node_major() { command -v node >/dev/null && node -p 'process.versions.node.split(".")[0]' || echo 0; }
+  if [[ "$(node_major)" -lt 18 ]]; then apt-get install -y -q nodejs npm || true; fi
+  if [[ "$(node_major)" -lt 18 ]]; then
+    # Ubuntu 22.04 ships Node 12, too old for the web build: use the NodeSource Node 20 repository
+    echo "==> Installing Node.js 20 from NodeSource"
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y -q nodejs
   fi
+  [[ "$(node_major)" -ge 18 ]] || { echo "Node.js 18 or newer is required to build the web app"; exit 1; }
   echo "==> Building"
   sudo -u "${SUDO_USER:-root}" bash "$ROOT/deploy/build.sh"
 fi
@@ -31,7 +37,9 @@ install -d -m 750 -g cmms /etc/cmms
 
 echo "==> Configuration"
 if [[ ! -f /etc/cmms/cmms.env ]]; then
-  rand() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
+  # read a fixed number of bytes first: piping /dev/urandom into head would end with SIGPIPE and,
+  # under "set -o pipefail", abort the whole install
+  rand() { local s; s="$(head -c 1024 /dev/urandom | tr -dc 'A-Za-z0-9')"; printf '%s' "${s:0:$1}"; }
   DBPW="$(rand 24)"; ADMINPW="$(rand 12)"
   sed -e "s|^CMMS_DB_PASSWORD=.*|CMMS_DB_PASSWORD=$DBPW|" \
       -e "s|^CMMS_JWT_SECRET=.*|CMMS_JWT_SECRET=$(rand 64)|" \
@@ -47,8 +55,11 @@ set -a; . /etc/cmms/cmms.env; set +a
 
 echo "==> Database"
 systemctl enable --now postgresql
+[[ "$CMMS_DB_USER" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "CMMS_DB_USER may only contain letters, digits and _"; exit 1; }
 if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$CMMS_DB_USER'" | grep -q 1; then
-  sudo -u postgres psql -q -c "CREATE ROLE \"$CMMS_DB_USER\" LOGIN PASSWORD '$CMMS_DB_PASSWORD'"
+  # the password goes in on stdin (not the command line, where any user could see it with ps)
+  printf "CREATE ROLE \"%s\" LOGIN PASSWORD '%s';\n" "$CMMS_DB_USER" "${CMMS_DB_PASSWORD//\'/\'\'}" \
+    | sudo -u postgres psql -q -v ON_ERROR_STOP=1
 fi
 DBNAME="${CMMS_DB_URL##*/}"; DBNAME="${DBNAME%%\?*}"
 if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DBNAME'" | grep -q 1; then

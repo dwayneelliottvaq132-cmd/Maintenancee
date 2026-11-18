@@ -34,17 +34,20 @@ case "$1" in
 
     # --- database (needs a running PostgreSQL; skipped with a note otherwise) ---
     DB_USER=$(sed -n 's/^CMMS_DB_USER=//p' "$ENV_FILE")
+    case "$DB_USER" in ''|*[!A-Za-z0-9_]*) echo "maintenance-manager: CMMS_DB_USER may only contain letters, digits and _" >&2; exit 1 ;; esac
     DB_PASS=$(sed -n 's/^CMMS_DB_PASSWORD=//p' "$ENV_FILE")
     DB_URL=$(sed -n 's/^CMMS_DB_URL=//p' "$ENV_FILE")
     DB_NAME=${DB_URL##*/}; DB_NAME=${DB_NAME%%\?*}
     if have_systemd; then systemctl start postgresql >/dev/null 2>&1 || true; fi
     NEW_DB=0
     if su postgres -s /bin/sh -c "psql -tAc 'SELECT 1'" >/dev/null 2>&1; then
+      # passwords go to psql on stdin, never on a command line (visible to every user via ps)
+      PASS_SQL=$(printf '%s' "$DB_PASS" | sed "s/'/''/g")
       if ! su postgres -s /bin/sh -c "psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'\"" | grep -q 1; then
-        su postgres -s /bin/sh -c "psql -q -c \"CREATE ROLE \\\"$DB_USER\\\" LOGIN PASSWORD '$DB_PASS'\""
+        printf "CREATE ROLE \"%s\" LOGIN PASSWORD '%s';\n" "$DB_USER" "$PASS_SQL" | su postgres -s /bin/sh -c "psql -q -v ON_ERROR_STOP=1"
       elif [ "$FIRST_INSTALL" = 1 ]; then
         # role left over from an earlier install: give it the new password
-        su postgres -s /bin/sh -c "psql -q -c \"ALTER ROLE \\\"$DB_USER\\\" WITH LOGIN PASSWORD '$DB_PASS'\""
+        printf "ALTER ROLE \"%s\" WITH LOGIN PASSWORD '%s';\n" "$DB_USER" "$PASS_SQL" | su postgres -s /bin/sh -c "psql -q -v ON_ERROR_STOP=1"
       fi
       if ! su postgres -s /bin/sh -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='$DB_NAME'\"" | grep -q 1; then
         su postgres -s /bin/sh -c "createdb -O '$DB_USER' '$DB_NAME'"
@@ -87,7 +90,9 @@ case "$1" in
     echo "Maintenance Manager is installed."
     echo "  Open:     http://$(hostname -I 2>/dev/null | awk '{print $1}')/   (the server needs ~30 s to start)"
     if [ "$NEW_DB" = 1 ]; then
-      echo "  Login:    admin / $(sed -n 's/^CMMS_ADMIN_PASSWORD=//p' "$ENV_FILE")   (you will be asked to change it)"
+      # the password itself is not printed: apt keeps a copy of this output in /var/log/apt/term.log
+      echo "  Login:    admin  - see the first password with:  sudo grep ADMIN_PASSWORD $ENV_FILE"
+      echo "            (you will be asked to change it at first login)"
     else
       echo "  Login:    your existing accounts (the database already has users)"
     fi

@@ -13,14 +13,15 @@ tracking per asset and per employee, maintenance requests with supervisor sign-o
 ## Install on Ubuntu with the .deb package (recommended for Ubuntu 24.04+)
 
 ```bash
-sudo apt install ./maintenance-manager_1.1.0_all.deb
+sudo apt install ./maintenance-manager_1.2.0_all.deb
 ```
 
 `apt` installs the dependencies (Java 21, PostgreSQL, nginx and the Python libraries from Ubuntu's own packages).
 The package then:
 - creates the `cmms` user, the database, and `/etc/cmms/cmms.env` with random secrets
 - turns on the nginx site and starts the API, the timers and the backups
-- prints the web address and, on a new database, the first `admin` password
+- prints the web address, and on a new database tells you how to read the first `admin` password
+  (`sudo grep ADMIN_PASSWORD /etc/cmms/cmms.env`). It isn't printed, because apt keeps a copy of install output
 
 Package commands:
 - **Upgrade:** `sudo apt install ./maintenance-manager_<new>_all.deb`. Settings and data are kept.

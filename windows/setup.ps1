@@ -30,5 +30,8 @@ if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path "$stage\app" | Out-Null
 Copy-Item (Join-Path $Repo 'backend\target\cmms-api.jar') "$stage\app\cmms-api.jar"
 Copy-Item (Join-Path $Repo 'frontend\dist') "$stage\app\web" -Recurse
+New-Item -ItemType Directory -Force -Path "$stage\worker" | Out-Null
+Copy-Item (Join-Path $Repo 'worker\cmms_worker') "$stage\worker\cmms_worker" -Recurse
+Copy-Item (Join-Path $Repo 'worker\requirements.txt') "$stage\worker\requirements.txt"
 
 & (Join-Path $PSScriptRoot 'install.ps1') -Source $stage -StartWithWindows:$StartWithWindows

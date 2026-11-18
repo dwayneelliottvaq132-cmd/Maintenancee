@@ -8,10 +8,15 @@ MAINTENANCE MANAGER - WINDOWS INSTALL
 3. Wait for "Installation complete!". The app opens by itself.
 
 After that, open it with the "Maintenance Manager" icon on your Desktop or in the Start menu.
-First login (new install only): admin / admin123 - you will be asked to choose a new password.
+First login (new install only): admin and the password shown at the end of the install -
+you will be asked to choose a new password.
 
 The installer adds Java 21 and PostgreSQL automatically if they are missing (internet needed).
 Running the installer again upgrades the app and keeps all your data.
+
+Automatic jobs: PM work orders (while the server runs), nightly backup to
+%LOCALAPPDATA%\MaintenanceManager\backups, and - if Python 3.10+ is installed -
+email alerts and a monthly PDF/Excel spending report.
 
 Stop the server:   Start menu > Stop Maintenance Manager
 Settings:          %LOCALAPPDATA%\MaintenanceManager\config.ps1

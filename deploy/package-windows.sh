@@ -12,11 +12,14 @@ echo "==> Building web UI"
 
 echo "==> Assembling"
 rm -rf -- "$ROOT/dist/windows"
-mkdir -p "$OUT/app" "$OUT/scripts"
+mkdir -p "$OUT/app" "$OUT/scripts" "$OUT/worker"
 cp "$ROOT/backend/target/cmms-api.jar" "$OUT/app/"
 cp -r "$ROOT/frontend/dist" "$OUT/app/web"
-cp "$ROOT/windows/install.ps1" "$ROOT/windows/db-setup.ps1" "$ROOT/windows/launch.ps1" \
-   "$ROOT/windows/stop.ps1" "$ROOT/windows/maintenance.ico" "$OUT/scripts/"
+cp "$ROOT/windows/install.ps1" "$ROOT/windows/db-setup.ps1" "$ROOT/windows/launch.ps1" "$ROOT/windows/stop.ps1" \
+   "$ROOT/windows/backup.ps1" "$ROOT/windows/worker.ps1" "$ROOT/windows/maintenance.ico" "$OUT/scripts/"
+# Python jobs (email alerts, monthly reports): installed if Python 3.10+ is on the PC
+cp -r "$ROOT/worker/cmms_worker" "$ROOT/worker/requirements.txt" "$OUT/worker/"
+find "$OUT/worker" -name '__pycache__' -type d -prune -exec rm -rf {} +
 cp "$ROOT/windows/Install Maintenance Manager.bat" "$ROOT/windows/README.txt" "$OUT/"
 
 python3 - "$ROOT/dist/windows" <<'PY'
