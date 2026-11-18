@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+if [ "$1" = remove ] || [ "$1" = deconfigure ]; then
+  if [ -d /run/systemd/system ]; then
+    systemctl stop cmms-pm.timer cmms-alerts.timer cmms-report.timer cmms-backup.timer cmms-api.service >/dev/null 2>&1 || true
+    systemctl disable cmms-api.service cmms-pm.timer cmms-alerts.timer cmms-report.timer cmms-backup.timer >/dev/null 2>&1 || true
+  else
+    pkill -f /opt/cmms/backend/cmms-api.jar >/dev/null 2>&1 || true
+  fi
+fi
+exit 0

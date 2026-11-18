@@ -1,0 +1,18 @@
+Package: maintenance-manager
+Version: @VERSION@
+Section: misc
+Priority: optional
+Architecture: all
+Maintainer: Maintenance Manager <maintainer@localhost>
+Depends: openjdk-21-jre-headless | java21-runtime-headless, postgresql (>= 14), postgresql-client, nginx, python3 (>= 3.10), python3-psycopg (>= 3.1), python3-reportlab, python3-openpyxl, curl, adduser
+Installed-Size: @SIZE@
+Homepage: http://localhost/
+Description: Maintenance management system (CMMS)
+ Preventive maintenance scheduling, work orders with step-by-step work
+ instructions, labor / parts / spending tracking per asset and employee,
+ maintenance requests with supervisor sign-off, and asset management.
+ English and Spanish user interface.
+ .
+ Installs a Spring Boot API (port 8080, localhost only), the React web UI
+ served by nginx on port 80, a PostgreSQL database "cmms", and systemd timers
+ for PM generation, email alerts, monthly reports and nightly backups.

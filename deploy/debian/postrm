@@ -1,0 +1,19 @@
+#!/bin/sh
+set -e
+case "$1" in
+  remove)
+    rm -f /etc/nginx/sites-enabled/maintenance-manager
+    if [ -d /run/systemd/system ]; then
+      systemctl daemon-reload >/dev/null 2>&1 || true
+      systemctl reload nginx >/dev/null 2>&1 || true
+    fi
+    ;;
+  purge)
+    rm -f /etc/nginx/sites-enabled/maintenance-manager
+    rm -rf /etc/cmms
+    # Data is kept on purpose: the "cmms" PostgreSQL database, /var/lib/cmms (uploads, reports)
+    # and /var/backups/cmms. Remove them by hand if you really want everything gone.
+    echo "maintenance-manager: settings removed. Kept: database 'cmms', /var/lib/cmms, /var/backups/cmms" >&2
+    ;;
+esac
+exit 0

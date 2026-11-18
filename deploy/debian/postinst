@@ -1,0 +1,100 @@
+#!/bin/sh
+# postinst for maintenance-manager
+set -e
+
+ENV_FILE=/etc/cmms/cmms.env
+UNITS="cmms-api.service cmms-pm.timer cmms-alerts.timer cmms-report.timer cmms-backup.timer"
+
+have_systemd() { [ -d /run/systemd/system ]; }
+
+rand() { tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
+
+case "$1" in
+  configure)
+    # --- system user and folders ---
+    if ! getent passwd cmms >/dev/null; then
+      adduser --system --group --home /opt/cmms --no-create-home --shell /usr/sbin/nologin cmms >/dev/null
+    fi
+    install -d -o cmms -g cmms -m 750 /var/lib/cmms /var/lib/cmms/uploads /var/lib/cmms/reports /var/backups/cmms
+    install -d -o root -g cmms -m 750 /etc/cmms
+
+    # --- settings: created once with random secrets, kept on upgrade ---
+    FIRST_INSTALL=0
+    if [ ! -f "$ENV_FILE" ]; then
+      FIRST_INSTALL=1
+      ADMINPW="$(rand 12)"
+      sed -e "s|^CMMS_DB_PASSWORD=.*|CMMS_DB_PASSWORD=$(rand 24)|" \
+          -e "s|^CMMS_JWT_SECRET=.*|CMMS_JWT_SECRET=$(rand 64)|" \
+          -e "s|^CMMS_ADMIN_PASSWORD=.*|CMMS_ADMIN_PASSWORD=$ADMINPW|" \
+          -e "s|^CMMS_APP_URL=.*|CMMS_APP_URL=http://$(hostname -f 2>/dev/null || hostname)|" \
+          /usr/share/maintenance-manager/cmms.env.example > "$ENV_FILE"
+    fi
+    chown root:cmms "$ENV_FILE"
+    chmod 640 "$ENV_FILE"
+
+    # --- database (needs a running PostgreSQL; skipped with a note otherwise) ---
+    DB_USER=$(sed -n 's/^CMMS_DB_USER=//p' "$ENV_FILE")
+    DB_PASS=$(sed -n 's/^CMMS_DB_PASSWORD=//p' "$ENV_FILE")
+    DB_URL=$(sed -n 's/^CMMS_DB_URL=//p' "$ENV_FILE")
+    DB_NAME=${DB_URL##*/}; DB_NAME=${DB_NAME%%\?*}
+    if have_systemd; then systemctl start postgresql >/dev/null 2>&1 || true; fi
+    NEW_DB=0
+    if su postgres -s /bin/sh -c "psql -tAc 'SELECT 1'" >/dev/null 2>&1; then
+      if ! su postgres -s /bin/sh -c "psql -tAc \"SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'\"" | grep -q 1; then
+        su postgres -s /bin/sh -c "psql -q -c \"CREATE ROLE \\\"$DB_USER\\\" LOGIN PASSWORD '$DB_PASS'\""
+      elif [ "$FIRST_INSTALL" = 1 ]; then
+        # role left over from an earlier install: give it the new password
+        su postgres -s /bin/sh -c "psql -q -c \"ALTER ROLE \\\"$DB_USER\\\" WITH LOGIN PASSWORD '$DB_PASS'\""
+      fi
+      if ! su postgres -s /bin/sh -c "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='$DB_NAME'\"" | grep -q 1; then
+        su postgres -s /bin/sh -c "createdb -O '$DB_USER' '$DB_NAME'"
+      fi
+      # "new" = the app has not created any users yet (it creates 'admin' on its first start)
+      if ! su postgres -s /bin/sh -c "psql -d '$DB_NAME' -tAc \"SELECT to_regclass('public.users') IS NOT NULL\"" | grep -q t; then
+        NEW_DB=1
+      elif ! su postgres -s /bin/sh -c "psql -d '$DB_NAME' -tAc 'SELECT EXISTS (SELECT 1 FROM users)'" | grep -q t; then
+        NEW_DB=1
+      fi
+    else
+      echo "maintenance-manager: PostgreSQL is not running; create the database later with:" >&2
+      echo "  sudo dpkg-reconfigure maintenance-manager" >&2
+    fi
+
+    # --- nginx site ---
+    ln -sf /etc/nginx/sites-available/maintenance-manager /etc/nginx/sites-enabled/maintenance-manager
+    # the stock "default" site would catch port 80 first; turn it off (only the link, the file stays)
+    if [ -L /etc/nginx/sites-enabled/default ]; then
+      rm -f /etc/nginx/sites-enabled/default
+      echo "maintenance-manager: disabled the nginx 'default' site so the app answers on port 80" >&2
+    fi
+    if nginx -t >/dev/null 2>&1; then
+      if have_systemd; then systemctl reload nginx >/dev/null 2>&1 || systemctl restart nginx >/dev/null 2>&1 || true; fi
+    else
+      echo "maintenance-manager: nginx configuration test failed - run 'sudo nginx -t' to see why" >&2
+    fi
+
+    # --- services ---
+    if have_systemd; then
+      systemctl daemon-reload
+      # shellcheck disable=SC2086
+      systemctl enable $UNITS >/dev/null 2>&1 || true
+      systemctl restart cmms-api.service || true
+      # shellcheck disable=SC2086
+      systemctl start cmms-pm.timer cmms-alerts.timer cmms-report.timer cmms-backup.timer || true
+    fi
+
+    echo ""
+    echo "Maintenance Manager is installed."
+    echo "  Open:     http://$(hostname -I 2>/dev/null | awk '{print $1}')/   (the server needs ~30 s to start)"
+    if [ "$NEW_DB" = 1 ]; then
+      echo "  Login:    admin / $(sed -n 's/^CMMS_ADMIN_PASSWORD=//p' "$ENV_FILE")   (you will be asked to change it)"
+    else
+      echo "  Login:    your existing accounts (the database already has users)"
+    fi
+    echo "  Settings: $ENV_FILE   (SMTP for email alerts, then: sudo systemctl restart cmms-api)"
+    echo "  Logs:     journalctl -u cmms-api -f"
+    echo ""
+    ;;
+esac
+
+exit 0

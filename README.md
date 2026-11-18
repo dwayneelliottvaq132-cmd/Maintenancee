@@ -10,7 +10,29 @@ tracking per asset and per employee, maintenance requests with supervisor sign-o
 | Background jobs | Python 3 (PM generation, email alerts, monthly PDF/Excel reports) | `worker/` |
 | Ubuntu deployment | install script, systemd units + timers, nginx, backups | `deploy/` |
 
-## Install on Ubuntu 22.04 / 24.04
+## Install on Ubuntu with the .deb package (recommended for Ubuntu 24.04+)
+
+```bash
+sudo apt install ./maintenance-manager_1.1.0_all.deb
+```
+
+`apt` installs the dependencies (Java 21, PostgreSQL, nginx and the Python libraries from Ubuntu's own packages).
+The package then:
+- creates the `cmms` user, the database, and `/etc/cmms/cmms.env` with random secrets
+- turns on the nginx site and starts the API, the timers and the backups
+- prints the web address and, on a new database, the first `admin` password
+
+Package commands:
+- **Upgrade:** `sudo apt install ./maintenance-manager_<new>_all.deb`. Settings and data are kept.
+- **Remove the program, keep settings:** `sudo apt remove maintenance-manager`
+- **Also remove settings:** `sudo apt purge maintenance-manager`. The database, `/var/lib/cmms` and `/var/backups/cmms`
+  are always kept; delete them by hand if you really want everything gone.
+- **Re-run setup** (for example after starting PostgreSQL): `sudo dpkg-reconfigure maintenance-manager`
+- **Build the package:** `./deploy/package-deb.sh [version]` writes `dist/maintenance-manager_<version>_all.deb`.
+
+Ubuntu 22.04 doesn't ship `python3-psycopg` (version 3), so the package won't install there. Use the script below instead.
+
+## Install on Ubuntu 22.04 / 24.04 (script)
 
 Copy this folder to the server, then:
 
