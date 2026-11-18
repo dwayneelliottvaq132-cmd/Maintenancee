@@ -53,6 +53,9 @@ SELECT_SCHEDULES = """
      WHERE p.active
        AND NOT EXISTS (SELECT 1 FROM work_orders w WHERE w.pm_schedule_id = p.id
                         AND w.status NOT IN ('SIGNED_OFF','CANCELLED'))
+       -- this occurrence was already handled (e.g. its work order was cancelled): don't create it again
+       AND NOT (p.frequency_type <> 'METER' AND EXISTS (SELECT 1 FROM work_orders w
+                 WHERE w.pm_schedule_id = p.id AND w.due_date = p.next_due))
      ORDER BY p.id
 """
 

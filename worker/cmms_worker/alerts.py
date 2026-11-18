@@ -87,26 +87,43 @@ def send(cfg: Config, to: str, subject: str, body: str) -> None:
         s.send_message(msg)
 
 
+class _SendFailed(Exception):
+    pass
+
+
+def _deliver(conn, cfg: Config, kind: str, ref_id: int, to: str, subject: str, body: str, once_ever: bool = False) -> bool:
+    """Claim and send one email in its own transaction. If sending fails, the claim is rolled back so the
+    message is retried on the next run, and the failure doesn't stop alerts for anyone else."""
+    try:
+        with conn.transaction():
+            if not _claim(conn, kind, ref_id, once_ever=once_ever):
+                return False
+            try:
+                send(cfg, to, subject, body)
+            except Exception as e:  # SMTP refused, bad address, server down...
+                raise _SendFailed(str(e)) from e
+        return True
+    except _SendFailed as e:
+        log.warning("Could not email %s (%s #%s): %s - will retry next run", to, kind, ref_id, e)
+        return False
+
+
 def run(conn, cfg: Config, today: date | None = None) -> int:
-    """Send new-request notices (once per request) and the daily digest (once per user per day)."""
+    """Send new-request notices (once per request per supervisor) and the daily digest (once per user per day).
+    Returns the number of emails delivered."""
     sent = 0
     sups = conn.execute("""SELECT id, email FROM users WHERE active AND role IN ('ADMIN','SUPERVISOR')
                            AND email IS NOT NULL AND email <> ''""").fetchall()
     for r in conn.execute("""SELECT r.id, r.title, r.priority, u.full_name FROM maintenance_requests r
                              JOIN users u ON u.id = r.requester_id WHERE r.status = 'NEW'""").fetchall():
-        with conn.transaction():
-            if not _claim(conn, "new_request", r["id"], once_ever=True):
-                continue
-            for s in sups:
-                send(cfg, s["email"], f"New maintenance request ({r['priority']}): {r['title']}",
-                     f"{r['full_name']} reported: {r['title']}\n\nReview it at {cfg.app_url}/requests")
+        for s in sups:
+            if _deliver(conn, cfg, f"new_request:u{s['id']}", r["id"], s["email"],
+                        f"New maintenance request ({r['priority']}): {r['title']}",
+                        f"{r['full_name']} reported: {r['title']}\n\nReview it at {cfg.app_url}/requests", once_ever=True):
                 sent += 1
 
     for email, (name, lines, uid) in build_digests(conn, cfg, today).items():
-        with conn.transaction():
-            if not _claim(conn, "daily_digest", uid):
-                continue
-            send(cfg, email, f"Maintenance: {len(lines)} item(s) need attention",
-                 f"Hello {name},\n\n" + "\n".join(f"- {l}" for l in lines) + f"\n\n{cfg.app_url}\n")
+        if _deliver(conn, cfg, "daily_digest", uid, email, f"Maintenance: {len(lines)} item(s) need attention",
+                    f"Hello {name},\n\n" + "\n".join(f"- {l}" for l in lines) + f"\n\n{cfg.app_url}\n"):
             sent += 1
     return sent

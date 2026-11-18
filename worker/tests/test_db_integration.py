@@ -12,7 +12,8 @@ from psycopg.rows import dict_row
 from cmms_worker import alerts, pm, reports
 from cmms_worker.config import load
 
-SCHEMA_SQL = pathlib.Path(__file__).resolve().parents[2] / "backend/src/main/resources/db/migration/V1__init.sql"
+MIGRATIONS = sorted((pathlib.Path(__file__).resolve().parents[2] / "backend/src/main/resources/db/migration").glob("V*__*.sql"),
+                    key=lambda f: int(f.name[1:].split("__")[0]))
 CONNINFO = os.environ.get("CMMS_TEST_DB", "host=localhost dbname=cmms_test user=cmms password=cmms")
 
 
@@ -25,7 +26,8 @@ def conn():
     schema = "t_" + uuid.uuid4().hex[:8]
     c.execute(f"CREATE SCHEMA {schema}")
     c.execute(f"SET search_path TO {schema}")
-    c.execute(SCHEMA_SQL.read_text())
+    for m in MIGRATIONS:   # same schema the API builds with Flyway
+        c.execute(m.read_text())
     yield c
     c.execute(f"DROP SCHEMA {schema} CASCADE")
     c.close()
@@ -75,3 +77,48 @@ def test_alerts_and_report(conn, tmp_path, monkeypatch):
     assert all(pathlib.Path(f).stat().st_size > 1000 for f in files)
     data = reports.gather(conn, *reports.month_range(month))
     assert float(data["By employee (labor)"][0][4]) == 60.0
+
+
+def test_one_bad_address_does_not_block_other_alerts(conn, monkeypatch):
+    monkeypatch.delenv("CMMS_SMTP_HOST", raising=False)
+    tech, _ = seed(conn, date.today() - timedelta(days=5))
+    pm.generate_due(conn)
+    conn.execute("""INSERT INTO users (username, password_hash, full_name, email, role)
+                    VALUES ('sup2', 'x', 'Second Sup', 'broken@example.com', 'SUPERVISOR')""")
+    conn.execute("INSERT INTO maintenance_requests (title, requester_id) VALUES ('Leak', %s)", (tech,))
+    delivered = []
+
+    def fake_send(cfg, to, subject, body):
+        if to == "broken@example.com":
+            raise OSError("550 mailbox unavailable")
+        delivered.append((to, subject))
+
+    monkeypatch.setattr(alerts, "send", fake_send)
+    cfg = load()
+    alerts.run(conn, cfg)
+    # everyone else still got their mail: tech digest, sup digest, sup new-request notice
+    assert ("tech@example.com" in [t for t, _ in delivered]) and ("sup@example.com" in [t for t, _ in delivered])
+    assert sum(1 for t, s in delivered if s.startswith("New maintenance request")) == 1
+    first = len(delivered)
+    alerts.run(conn, cfg)
+    assert len(delivered) == first   # nothing sent twice; the broken address is retried but still fails
+
+
+def test_cancelled_pm_occurrence_is_not_recreated(conn):
+    seed(conn, date.today())
+    created = pm.generate_due(conn)
+    assert len(created) == 1
+    conn.execute("UPDATE work_orders SET status = 'CANCELLED'")
+    assert pm.generate_due(conn) == []
+
+
+def test_employee_report_counts_labor_only(conn):
+    tech, asset = seed(conn, date.today() + timedelta(days=30))
+    wo = conn.execute("""INSERT INTO work_orders (number, title, type, asset_id) VALUES ('WO-T1', 'x', 'CORRECTIVE', %s)
+                         RETURNING id""", (asset,)).fetchone()["id"]
+    conn.execute("INSERT INTO labor_entries (work_order_id, user_id, hours, hourly_rate) VALUES (%s, %s, 1, 30)", (wo, tech))
+    part = conn.execute("INSERT INTO parts (part_no, name, qty_on_hand) VALUES ('P', 'Part', 5) RETURNING id").fetchone()["id"]
+    conn.execute("INSERT INTO part_usages (work_order_id, part_id, qty, unit_cost, used_by) VALUES (%s, %s, 2, 50, %s)", (wo, part, tech))
+    data = reports.gather(conn, *reports.month_range(date.today().strftime("%Y-%m")))
+    row = data["By employee (labor)"][0]
+    assert float(row[4]) == 30.0   # total = labor only, not the $100 of parts

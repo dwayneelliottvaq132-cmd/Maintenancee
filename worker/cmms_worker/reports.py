@@ -15,11 +15,13 @@ from .pm import add_months
 
 log = logging.getLogger(__name__)
 
+# title -> (group expression, join, extra filter)
 SECTIONS = {
-    "By asset": ("COALESCE(a.tag || ' - ' || a.name, '(no asset)')", "LEFT JOIN assets a ON a.id = c.asset_id"),
-    "By category": ("COALESCE(a.category, '(uncategorised)')", "LEFT JOIN assets a ON a.id = c.asset_id"),
-    "By employee (labor)": ("COALESCE(u.full_name, '(not a person)')", "LEFT JOIN users u ON u.id = c.user_id"),
-    "By work type": ("wo.type", "JOIN work_orders wo ON wo.id = c.work_order_id"),
+    "By asset": ("COALESCE(a.tag || ' - ' || a.name, '(no asset)')", "LEFT JOIN assets a ON a.id = c.asset_id", ""),
+    "By category": ("COALESCE(a.category, '(uncategorised)')", "LEFT JOIN assets a ON a.id = c.asset_id", ""),
+    # labor only: parts a person used are not part of their labor cost
+    "By employee (labor)": ("u.full_name", "JOIN users u ON u.id = c.user_id", "AND c.cost_type = 'LABOR'"),
+    "By work type": ("wo.type", "JOIN work_orders wo ON wo.id = c.work_order_id", ""),
 }
 COLS = ["Group", "Labor", "Parts", "Other", "Total", "Hours", "Work orders"]
 
@@ -37,7 +39,7 @@ def previous_month(today: date | None = None) -> str:
 
 def gather(conn, start: date, end: date) -> dict[str, list[list]]:
     data: dict[str, list[list]] = {}
-    for title, (key, join) in SECTIONS.items():
+    for title, (key, join, extra) in SECTIONS.items():
         rows = conn.execute(f"""
             SELECT {key} AS label,
                    COALESCE(SUM(c.amount) FILTER (WHERE c.cost_type='LABOR'),0) AS labor,
@@ -45,7 +47,7 @@ def gather(conn, start: date, end: date) -> dict[str, list[list]]:
                    COALESCE(SUM(c.amount) FILTER (WHERE c.cost_type='OTHER'),0) AS other,
                    SUM(c.amount) AS total, SUM(c.hours) AS hours, COUNT(DISTINCT c.work_order_id) AS wos
               FROM v_cost_lines c {join}
-             WHERE c.cost_date >= %s AND c.cost_date < %s
+             WHERE c.cost_date >= %s AND c.cost_date < %s {extra}
              GROUP BY 1 ORDER BY total DESC""", (start, end)).fetchall()
         data[title] = [[r["label"], r["labor"], r["parts"], r["other"], r["total"], r["hours"], r["wos"]] for r in rows]
     s = conn.execute("""
@@ -83,7 +85,8 @@ def write_excel(path: str, month: str, data: dict[str, list[list]]) -> None:
         for r in rows:
             sh.append([r[0]] + [float(x or 0) for x in r[1:6]] + [r[6]])
         n = len(rows) + 1
-        sh.append(["TOTAL"] + [f"=SUM({col}2:{col}{n})" for col in "BCDEFG"])
+        # work-order counts are not summed: one work order can appear in several groups
+        sh.append(["TOTAL"] + [f"=SUM({col}2:{col}{n})" for col in "BCDEF"] + [None])
         for row in sh.iter_rows(min_row=2, min_col=2, max_col=5):
             for c in row:
                 c.number_format = '"$"#,##0.00'
