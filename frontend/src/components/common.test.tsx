@@ -36,3 +36,36 @@ describe('money', () => {
     expect(money(null)).toBe('$0.00');
   });
 });
+
+describe('dates', () => {
+  it('today() is the local calendar date, not the UTC one', async () => {
+    const { today, isoLocal } = await import('./common');
+    const d = new Date();
+    expect(today()).toBe(isoLocal(d));
+    expect(isoLocal(new Date(2026, 10, 18, 23, 30))).toBe('2026-11-18');
+  });
+  it('calendar month steps clamp to month end like the server', async () => {
+    const { addMonths } = await import('../pages/PmSchedules');
+    const feb = addMonths(new Date(2026, 0, 31), 1);
+    expect([feb.getMonth(), feb.getDate()]).toEqual([1, 28]);
+    const leap = addMonths(new Date(2024, 0, 31), 1);
+    expect(leap.getDate()).toBe(29);
+  });
+});
+
+describe('FormDialog reopening', () => {
+  it('discards an abandoned edit when opened again', async () => {
+    const { rerender } = render(<FormDialog open title="Edit" initial={{ title: 'Pump' }} onClose={() => {}} onSubmit={vi.fn()}
+      fields={[{ name: 'title', label: 'Title' }]} />);
+    fireEvent.change(screen.getByLabelText(/Title/), { target: { value: 'Typo' } });
+    rerender(<FormDialog open={false} title="Edit" initial={{ title: 'Pump' }} onClose={() => {}} onSubmit={vi.fn()} fields={[{ name: 'title', label: 'Title' }]} />);
+    rerender(<FormDialog open title="Edit" initial={{ title: 'Pump' }} onClose={() => {}} onSubmit={vi.fn()} fields={[{ name: 'title', label: 'Title' }]} />);
+    expect((screen.getByLabelText(/Title/) as HTMLInputElement).value).toBe('Pump');
+  });
+  it('keeps what is being typed when the parent re-renders with a new initial object', () => {
+    const { rerender } = render(<FormDialog open title="New" initial={{}} onClose={() => {}} onSubmit={vi.fn()} fields={[{ name: 'title', label: 'Title' }]} />);
+    fireEvent.change(screen.getByLabelText(/Title/), { target: { value: 'Half typed' } });
+    rerender(<FormDialog open title="New" initial={{}} onClose={() => {}} onSubmit={vi.fn()} fields={[{ name: 'title', label: 'Title' }]} />);
+    expect((screen.getByLabelText(/Title/) as HTMLInputElement).value).toBe('Half typed');
+  });
+});

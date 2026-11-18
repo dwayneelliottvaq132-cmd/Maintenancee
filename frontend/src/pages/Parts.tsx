@@ -30,7 +30,7 @@ export default function PartsPage() {
   const [low, setLow] = useState(params.get('low') === '1');
   const [q, setQ] = useState('');
   const [dlg, setDlg] = useState<{ mode: 'new' | 'edit' | 'receive' | 'adjust' | 'history'; part?: Part } | null>(null);
-  const reload = () => { qc.invalidateQueries({ queryKey: ['parts'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); };
+  const reload = () => { ['parts', 'part-tx', 'dashboard'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); };
   const rows = lk.parts.filter((p) => (!low || (p.active && Number(p.qtyOnHand) <= Number(p.reorderPoint)))
     && (!q || `${p.partNo} ${p.name} ${p.supplier ?? ''} ${p.binLocation ?? ''}`.toLowerCase().includes(q.toLowerCase())));
   const stockValue = lk.parts.reduce((s, p) => s + Number(p.qtyOnHand) * Number(p.unitCost), 0);
@@ -81,7 +81,7 @@ export default function PartsPage() {
         initial={{ unitCost: dlg?.part?.unitCost }} submitLabel={t("Receive")}
         fields={[
           { name: 'qty', label: t("Quantity received"), type: 'number', required: true, half: true },
-          { name: 'unitCost', label: t("Unit cost paid ($)"), type: 'number', half: true },
+          ...(isSupervisor ? [{ name: 'unitCost', label: t("Unit cost paid ($)"), type: 'number' as const, half: true }] : []),
           { name: 'reference', label: t("PO / invoice / packing slip #") },
         ]}
         onSubmit={(v) => api.post(`/parts/${dlg!.part!.id}/receive`, v).then(reload)} />

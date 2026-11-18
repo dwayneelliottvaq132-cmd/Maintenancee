@@ -37,29 +37,26 @@ export function tEnum(value?: string | null): string {
   return current === 'es' ? ES[`enum:${value}`] ?? english : english;
 }
 
-/** Error messages come from the server in English; translate the common ones. */
+/**
+ * Error messages come from the server in English. Fixed messages are looked up directly in the
+ * dictionary; messages with names or numbers in them are matched by pattern.
+ */
 const SERVER_PATTERNS: [RegExp, string][] = [
-  [/^Invalid username or password$/, 'Invalid username or password'],
   [/^(\d+) required instruction step\(s\) are not checked off yet$/, '{1} required instruction step(s) are not checked off yet'],
   [/^Not enough (.+) in stock \(on hand (.+), requested (.+)\)$/, 'Not enough {1} in stock (on hand {2}, requested {3})'],
-  [/^Work order must be completed before sign-off$/, 'Work order must be completed before sign-off'],
-  [/^Only supervisors can sign off work$/, 'Only supervisors can sign off work'],
-  [/^Type your full name to sign off$/, 'Type your full name to sign off'],
-  [/^Technicians can only log their own hours$/, 'Technicians can only log their own hours'],
   [/^Work order (\S+) is (\S+) and can no longer be changed$/, 'Work order {1} is {2} and can no longer be changed'],
-  [/^An open work order already exists for this schedule$/, 'An open work order already exists for this schedule'],
+  [/^Work order (\S+) is completed\. A supervisor must send it back before it can be changed$/, 'Work order {1} is completed. A supervisor must send it back before it can be changed'],
   [/^Request has already been (\w+)$/, 'Request has already been {1}'],
-  [/^Give a reason for rejecting the request$/, 'Give a reason for rejecting the request'],
-  [/^Current password is incorrect$/, 'Current password is incorrect'],
-  [/^You do not have permission to do that$/, 'You do not have permission to do that'],
-  [/^Username already exists$/, 'Username already exists'],
-  [/^Password must be at least 8 characters$/, 'Password must be at least 8 characters'],
-  [/^(.+) is required$/, '{1} is required'],
-  [/^Conflicts with existing data/, 'Conflicts with existing data (duplicate or in use)'],
+  [/^The new reading is lower than the current one \((.+)\)\. Ask a supervisor to correct it$/, 'The new reading is lower than the current one ({1}). Ask a supervisor to correct it'],
+  [/^(.+) is no longer active$/, '{1} is no longer active'],
+  [/^(.+) is a requester and cannot be assigned work$/, '{1} is a requester and cannot be assigned work'],
+  [/^(.+) is not active$/, '{1} is not active'],
+  [/^(\S+) (\S+) not found$/, '{1} {2} not found'],
 ];
 
 export function tServer(message: string): string {
   if (current !== 'es') return message;
+  if (ES[message]) return ES[message];
   for (const [re, key] of SERVER_PATTERNS) {
     const m = message.match(re);
     if (m) {

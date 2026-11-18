@@ -34,7 +34,7 @@ export default function WorkOrderDetailPage() {
 
   const reload = () => {
     refetch();
-    ['work-orders', 'dashboard', 'parts', 'assets', 'pm', 'wo-audit'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+    ['work-orders', 'dashboard', 'parts', 'part-tx', 'assets', 'asset', 'pm', 'wo-audit'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
   };
   const act = async (fn: () => Promise<any>) => {
     try { await fn(); setErr(null); reload(); } catch (e) { setErr(errMsg(e)); }
@@ -97,7 +97,7 @@ export default function WorkOrderDetailPage() {
                           onChange={(e) => act(() => api.put(`/work-orders/${id}/steps/${s.stepId}`, { done: e.target.checked }))} />
                       </TableCell>
                       <TableCell sx={{ textDecoration: s.done ? 'line-through' : undefined }}>
-                        <b>{s.seq}.</b> {s.text} {!s.requiresCheck && <Typography component="span" variant="caption" color="text.secondary">(optional)</Typography>}
+                        <b>{s.seq}.</b> {s.text} {!s.requiresCheck && <Typography component="span" variant="caption" color="text.secondary">({t('optional')})</Typography>}
                       </TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap', color: 'text.secondary', fontSize: 12 }}>{s.done ? `${userName(s.doneBy)} · ${dateTime(s.doneAt)}` : ''}</TableCell>
                     </TableRow>
@@ -109,7 +109,7 @@ export default function WorkOrderDetailPage() {
 
           <CostSection title={t("Labor")} total={data.totals.labor} extra={t('{n} hours', { n: num(data.totals.hours) })} canAdd={!closed} onAdd={() => setDialog('labor')}
             head={[t('Employee'), t('Date'), t('Hours'), t('Rate'), t('Cost'), t('Note')]}
-            rows={data.labor.map((l) => ({ id: l.id, cells: [userName(l.userId), date(l.workDate), num(l.hours), money(l.hourlyRate), money(l.hours * l.hourlyRate), l.note],
+            rows={data.labor.map((l) => ({ id: l.id, cells: [userName(l.userId), date(l.workDate), num(l.hours), l.hourlyRate == null ? '—' : money(l.hourlyRate), l.hourlyRate == null ? '—' : money(l.hours * l.hourlyRate), l.note],
               canDelete: !closed && (isSupervisor || l.userId === user?.id), del: () => act(() => api.delete(`/work-orders/${id}/labor/${l.id}`)) }))} />
           <CostSection title={t("Parts & supplies used")} total={data.totals.parts} canAdd={!closed} onAdd={() => setDialog('part')}
             head={[t('Part'), t('Qty'), t('Unit cost'), t('Cost'), t('Used')]}
@@ -128,10 +128,10 @@ export default function WorkOrderDetailPage() {
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1" fontWeight={600} mb={1}>{t("Cost summary")}</Typography>
             {[[t('Labor'), data.totals.labor], [t('Parts'), data.totals.parts], [t('Other'), data.totals.other]].map(([k, v]) => (
-              <Box key={k as string} display="flex" justifyContent="space-between"><Typography>{k}</Typography><Typography>{money(v)}</Typography></Box>
+              <Box key={k as string} display="flex" justifyContent="space-between"><Typography>{k}</Typography><Typography>{v == null ? '—' : money(v)}</Typography></Box>
             ))}
             <Divider sx={{ my: 1 }} />
-            <Box display="flex" justifyContent="space-between"><Typography fontWeight={600}>{t("Total")}</Typography><Typography fontWeight={600}>{money(data.totals.total)}</Typography></Box>
+            <Box display="flex" justifyContent="space-between"><Typography fontWeight={600}>{t("Total")}</Typography><Typography fontWeight={600}>{data.totals.total == null ? '—' : money(data.totals.total)}</Typography></Box>
           </Paper>
           <Paper sx={{ p: 2 }}>
             <Typography variant="subtitle1" fontWeight={600} mb={1}>{t("Assigned employees")}</Typography>
@@ -169,7 +169,7 @@ export default function WorkOrderDetailPage() {
       <FormDialog open={dialog === 'part'} title={t("Use parts from stock")} onClose={() => setDialog(null)} initial={{ qty: 1 }}
         fields={[
           { name: 'partId', label: t("Part"), type: 'autocomplete', required: true,
-            options: opts(lk.parts.filter((p) => p.active), (p) => p.id, (p) => `${p.partNo} — ${p.name} (${num(p.qtyOnHand)} ${p.unit} on hand)`) },
+            options: opts(lk.parts.filter((p) => p.active), (p) => p.id, (p) => `${p.partNo} — ${p.name} (${t('{n} on hand', { n: `${num(p.qtyOnHand)} ${p.unit}` })})`) },
           { name: 'qty', label: t("Quantity"), type: 'number', required: true },
         ]}
         onSubmit={(v) => api.post(`/work-orders/${id}/parts`, v).then(reload)} />
@@ -191,7 +191,7 @@ export default function WorkOrderDetailPage() {
         initial={{ signatureName: '' }}
         fields={[
           { name: 'signatureName', label: t('Type your full name to sign ({name})', { name: user?.fullName }), required: true,
-            helper: t('By signing you confirm the work was inspected and completed. Total cost {total}.', { total: money(data.totals.total) }) },
+            helper: t('By signing you confirm the work was inspected and completed. Total cost {total}.', { total: data.totals.total == null ? '—' : money(data.totals.total) }) },
           { name: 'notes', label: t("Notes"), type: 'textarea' },
         ]}
         onSubmit={(v) => api.post(`/work-orders/${id}/sign-off`, v).then(reload)} />
@@ -220,7 +220,7 @@ function Info({ label, value }: { label: string; value: any }) {
 }
 
 function CostSection({ title, total, extra, head, rows, canAdd, onAdd }: {
-  title: string; total: number; extra?: string; head: string[]; canAdd: boolean; onAdd: () => void;
+  title: string; total: number | null; extra?: string; head: string[]; canAdd: boolean; onAdd: () => void;
   rows: { id: number; cells: any[]; canDelete: boolean; del: () => void }[];
 }) {
   return (
@@ -228,7 +228,7 @@ function CostSection({ title, total, extra, head, rows, canAdd, onAdd }: {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="subtitle1" fontWeight={600}>{title}</Typography>
         <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="body2" color="text.secondary">{extra ? `${extra} · ` : ''}{money(total)}</Typography>
+          <Typography variant="body2" color="text.secondary">{extra ? `${extra} · ` : ''}{total == null ? '—' : money(total)}</Typography>
           {canAdd && <Button size="small" variant="outlined" onClick={onAdd} className="no-print">{t("Add")}</Button>}
         </Box>
       </Box>

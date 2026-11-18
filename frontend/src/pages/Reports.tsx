@@ -5,16 +5,15 @@ import {
   Box, Button, Link, MenuItem, Paper, Stack, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, TextField, Typography,
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
-import { api, fileUrl } from '../api';
-import { PageHeader, dateTime, downloadCsv, money, num } from '../components/common';
+import { api, openFile } from '../api';
+import { PageHeader, dateTime, downloadCsv, money, num, today } from '../components/common';
 
 const firstOfYear = () => `${new Date().getFullYear()}-01-01`;
-const todayIso = () => new Date().toISOString().slice(0, 10);
 
 export default function ReportsPage() {
   const [tab, setTab] = useState(0);
   const [from, setFrom] = useState(firstOfYear());
-  const [to, setTo] = useState(todayIso());
+  const [to, setTo] = useState(today());
   const [groupBy, setGroupBy] = useState('asset');
 
   const spending = useQuery({ queryKey: ['rep-spend', from, to, groupBy], enabled: tab === 0,
@@ -129,7 +128,7 @@ export default function ReportsPage() {
             <TableBody>
               {(files.data ?? []).map((f) => (
                 <TableRow key={f.name}>
-                  <TableCell><Link href={fileUrl(`/reports/files/${f.name}`)}>{f.name}</Link></TableCell>
+                  <TableCell><Link component="button" onClick={() => openFile(`/reports/files/${f.name}`)}>{f.name}</Link></TableCell>
                   <TableCell>{num(f.size / 1024)} KB</TableCell><TableCell>{dateTime(f.modified)}</TableCell>
                 </TableRow>
               ))}

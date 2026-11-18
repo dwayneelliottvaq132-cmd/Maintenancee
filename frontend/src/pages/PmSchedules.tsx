@@ -50,9 +50,16 @@ function occurrences(s: any, until: Date): Date[] {
     out.push(new Date(d));
     if (s.frequencyType === 'DAYS') d.setDate(d.getDate() + s.intervalValue);
     else if (s.frequencyType === 'WEEKS') d.setDate(d.getDate() + 7 * s.intervalValue);
-    else d.setMonth(d.getMonth() + s.intervalValue);
+    else d = addMonths(d, s.intervalValue);
   }
   return out;
+}
+
+/** Same as the server (Java plusMonths): Jan 31 + 1 month = Feb 28/29, never Mar 3. */
+export function addMonths(d: Date, months: number): Date {
+  const first = new Date(d.getFullYear(), d.getMonth() + months, 1);
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), lastDay));
 }
 
 function Calendar({ schedules }: { schedules: any[] }) {
@@ -104,7 +111,7 @@ export default function PmPage() {
   const [edit, setEdit] = useState<any | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const { data = [], refetch } = useQuery({ queryKey: ['pm'], queryFn: async () => (await api.get<any[]>('/pm-schedules')).data });
-  const reload = () => { refetch(); qc.invalidateQueries({ queryKey: ['dashboard'] }); };
+  const reload = () => { refetch(); ['dashboard', 'work-orders'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); };
 
   const run = async (fn: () => Promise<any>, ok: (r: any) => string) => {
     try { const r = await fn(); setMsg({ ok: true, text: ok(r.data) }); reload(); } catch (e) { setMsg({ ok: false, text: errMsg(e) }); }

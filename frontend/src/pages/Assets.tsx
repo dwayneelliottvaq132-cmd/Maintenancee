@@ -59,7 +59,7 @@ export default function AssetsPage() {
             <TableRow>
               <TableCell>{t("Tag")}</TableCell><TableCell>{t("Name")}</TableCell><TableCell>{t("Category")}</TableCell><TableCell>{t("Location")}</TableCell>
               <TableCell>{t("Status")}</TableCell><TableCell>{t("Criticality")}</TableCell><TableCell align="right">{t("Open WOs")}</TableCell>
-              <TableCell>{t("Next PM")}</TableCell><TableCell align="right">{t("Lifetime cost")}</TableCell>
+              <TableCell>{t("Next PM")}</TableCell>{isSupervisor && <TableCell align="right">{t("Lifetime cost")}</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -68,7 +68,7 @@ export default function AssetsPage() {
                 <TableCell><b>{a.tag}</b></TableCell><TableCell>{a.name}</TableCell><TableCell>{a.category}</TableCell>
                 <TableCell>{a.locationName}</TableCell><TableCell><StatusChip value={a.status} /></TableCell>
                 <TableCell><StatusChip value={a.criticality} /></TableCell><TableCell align="right">{a.openWorkOrders}</TableCell>
-                <TableCell>{date(a.nextPmDue)}</TableCell><TableCell align="right">{money(a.lifetimeCost)}</TableCell>
+                <TableCell>{date(a.nextPmDue)}</TableCell>{isSupervisor && <TableCell align="right">{money(a.lifetimeCost)}</TableCell>}
               </TableRow>
             ))}
             {!rows.length && <TableRow><TableCell colSpan={9}>{t("No assets found.")}</TableCell></TableRow>}

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, Role, User } from './api';
 
 interface AuthCtx {
@@ -17,6 +18,7 @@ const Ctx = createContext<AuthCtx>(null as any);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
   const refresh = async () => {
     if (!localStorage.getItem('cmms_token')) { setUser(null); return; }
@@ -27,11 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     const { data } = await api.post('/auth/login', { username, password });
+    qc.clear();   // never show the previous user's cached screens
     localStorage.setItem('cmms_token', data.token);
     setUser(data.user);
     return data.user as User;
   };
-  const logout = () => { localStorage.removeItem('cmms_token'); setUser(null); };
+  const logout = () => { localStorage.removeItem('cmms_token'); qc.clear(); setUser(null); };
   const can = (...roles: Role[]) => !!user && roles.includes(user.role);
 
   return (

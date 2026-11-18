@@ -36,7 +36,10 @@ export const money = (v: unknown) =>
 export const num = (v: unknown) => Number(v ?? 0).toLocaleString(locale(), { maximumFractionDigits: 2 });
 export const date = (v?: string | null) => (v ? new Date(v.length === 10 ? v + 'T00:00:00' : v).toLocaleDateString(locale()) : '—');
 export const dateTime = (v?: string | null) => (v ? new Date(v).toLocaleString(locale()) : '—');
-export const today = () => new Date().toISOString().slice(0, 10);
+/** YYYY-MM-DD for a date in the computer's own time zone (toISOString would give the UTC date). */
+export const isoLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const today = () => isoLocal(new Date());
 
 /** Shared lookup lists used to turn ids into names. */
 export function useLookups() {
@@ -67,8 +70,13 @@ export function FormDialog<T extends Record<string, any>>({ open, title, fields,
   const [values, setValues] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [lastInitial, setLastInitial] = useState(initial);
-  if (initial !== lastInitial) { setLastInitial(initial); setValues(initial); setError(null); }
+  // start from `initial` every time the dialog opens (an abandoned edit never comes back), and ignore
+  // changes to `initial` while it is open (a background refresh must not wipe what is being typed)
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) { setValues(initial); setError(null); }
+  }
 
   const set = (k: string, v: any) => setValues((s) => ({ ...s, [k]: v }));
   const submit = async () => {

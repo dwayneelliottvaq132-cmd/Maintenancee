@@ -15,7 +15,8 @@ export default function AccountPage({ forced }: { forced?: boolean }) {
   const save = async () => {
     if (next !== confirm) { setMsg({ ok: false, text: t('New passwords do not match') }); return; }
     try {
-      await api.post('/auth/password', { currentPassword: cur, newPassword: next });
+      const { data } = await api.post('/auth/password', { currentPassword: cur, newPassword: next });
+      localStorage.setItem('cmms_token', data.token);   // other sessions are now signed out
       setMsg({ ok: true, text: t('Password changed') });
       setCur(''); setNext(''); setConfirm('');
       await refresh();

@@ -25,10 +25,20 @@ export function errMsg(e: unknown): string {
   return tServer(anyE?.response?.data?.error ?? anyE?.message ?? 'Something went wrong');
 }
 
-/** URL for a file download that needs auth (opened in a new tab). */
-export function fileUrl(path: string) {
-  const t = localStorage.getItem('cmms_token') ?? '';
-  return `/api${path}${path.includes('?') ? '&' : '?'}access_token=${encodeURIComponent(t)}`;
+/**
+ * Open a protected file (document, report) in a new tab. The tab can't send the login header, so the
+ * server gives us a 2-minute token that only works for downloads; the real login token never goes in a URL.
+ */
+export async function openFile(path: string) {
+  const win = window.open('', '_blank');   // open synchronously so pop-up blockers allow it
+  try {
+    const { data } = await api.post<{ token: string }>('/auth/download-token');
+    const url = `/api${path}?access_token=${encodeURIComponent(data.token)}`;
+    if (win) win.location.href = url; else window.location.href = url;
+  } catch (e) {
+    win?.close();
+    throw e;
+  }
 }
 
 export type Role = 'ADMIN' | 'SUPERVISOR' | 'TECHNICIAN' | 'REQUESTER';
@@ -73,8 +83,9 @@ export interface WorkOrder {
 export interface WorkOrderDetail {
   workOrder: WorkOrder; assigneeIds: number[]; instruction?: WorkInstruction | null;
   steps: { stepId: number; seq: number; text: string; requiresCheck: boolean; done: boolean; note?: string; doneBy?: number; doneAt?: string }[];
-  labor: { id: number; userId: number; workDate: string; hours: number; hourlyRate: number; note?: string }[];
+  labor: { id: number; userId: number; workDate: string; hours: number; hourlyRate: number | null; note?: string }[];
   parts: { id: number; partId: number; qty: number; unitCost: number; usedAt: string }[];
   otherCosts: { id: number; description: string; vendor?: string; amount: number; costDate: string }[];
-  totals: { labor: number; parts: number; other: number; total: number; hours: number };
+  /** labor and total are null for people who may not see pay rates */
+  totals: { labor: number | null; parts: number; other: number; total: number | null; hours: number };
 }

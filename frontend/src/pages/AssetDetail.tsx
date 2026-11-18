@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert, Box, Button, Link as MuiLink, Paper, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, Typography,
 } from '@mui/material';
-import { api, Asset, errMsg, fileUrl } from '../api';
+import { api, Asset, errMsg, openFile } from '../api';
 import { useAuth } from '../auth';
 import { FormDialog, PageHeader, StatusChip, date, dateTime, money, num, useLookups } from '../components/common';
 import { assetFields } from './Assets';
@@ -40,7 +40,7 @@ export default function AssetDetailPage() {
     [t('Manufacturer'), a.manufacturer], [t('Model'), a.model], [t('Serial number'), a.serialNumber],
     [t('Install date'), date(a.installDate)], [t('Purchase cost'), a.purchaseCost != null ? money(a.purchaseCost) : null],
     [t('Warranty until'), date(a.warrantyUntil)], [t('Meter reading'), `${num(a.meterReading)} ${a.meterUnit ?? ''}`],
-    [t('Lifetime maintenance cost'), money(data.costs.total)],
+    ...(data.costs ? [[t('Lifetime maintenance cost'), money(data.costs.total)] as [string, any]] : []),
   ];
 
   return (
@@ -54,8 +54,10 @@ export default function AssetDetailPage() {
         </>} />
       {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }} variant="scrollable">
-        <Tab label={t("Details")} /><Tab label={t('Work history ({n})', { n: data.workOrders.length })} />
-        <Tab label={t('PM schedules ({n})', { n: data.schedules.length })} /><Tab label={t("Costs")} /><Tab label={t('Documents ({n})', { n: data.documents.length })} />
+        <Tab value={0} label={t("Details")} /><Tab value={1} label={t('Work history ({n})', { n: data.workOrders.length })} />
+        <Tab value={2} label={t('PM schedules ({n})', { n: data.schedules.length })} />
+        {data.costs && <Tab value={3} label={t("Costs")} />}
+        <Tab value={4} label={t('Documents ({n})', { n: data.documents.length })} />
       </Tabs>
 
       {tab === 0 && (
@@ -79,14 +81,14 @@ export default function AssetDetailPage() {
         <Paper sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead><TableRow><TableCell>{t("WO")}</TableCell><TableCell>{t("Title")}</TableCell><TableCell>{t("Type")}</TableCell><TableCell>{t("Status")}</TableCell>
-              <TableCell>{t("Assigned")}</TableCell><TableCell>{t("Created")}</TableCell><TableCell>{t("Completed")}</TableCell><TableCell align="right">{t("Cost")}</TableCell></TableRow></TableHead>
+              <TableCell>{t("Assigned")}</TableCell><TableCell>{t("Created")}</TableCell><TableCell>{t("Completed")}</TableCell>{data.costs && <TableCell align="right">{t("Cost")}</TableCell>}</TableRow></TableHead>
             <TableBody>
               {data.workOrders.map((w: any) => (
                 <TableRow key={w.id} hover sx={{ cursor: 'pointer' }} onClick={() => nav(`/work-orders/${w.id}`)}>
                   <TableCell>{w.number}</TableCell><TableCell>{w.title}</TableCell><TableCell>{tEnum(w.type)}</TableCell>
                   <TableCell><StatusChip value={w.status} /></TableCell><TableCell>{w.assignees}</TableCell>
                   <TableCell>{date(w.createdAt)}</TableCell><TableCell>{date(w.completedAt)}</TableCell>
-                  <TableCell align="right">{money(w.totalCost)}</TableCell>
+                  {data.costs && <TableCell align="right">{money(w.totalCost)}</TableCell>}
                 </TableRow>
               ))}
               {!data.workOrders.length && <TableRow><TableCell colSpan={8}>{t("No work orders yet.")}</TableCell></TableRow>}
@@ -115,7 +117,7 @@ export default function AssetDetailPage() {
         </Paper>
       )}
 
-      {tab === 3 && (
+      {tab === 3 && data.costs && (
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={2}>
           <Paper sx={{ p: 2 }}>
             <Typography fontWeight={600} mb={1}>{t("By cost type")}</Typography>
@@ -143,7 +145,7 @@ export default function AssetDetailPage() {
             <TableBody>
               {data.documents.map((d: any) => (
                 <TableRow key={d.id}>
-                  <TableCell><MuiLink href={fileUrl(`/assets/${id}/documents/${d.id}`)} target="_blank">{d.fileName}</MuiLink></TableCell>
+                  <TableCell><MuiLink component="button" onClick={() => openFile(`/assets/${id}/documents/${d.id}`).catch((e) => setErr(errMsg(e)))}>{d.fileName}</MuiLink></TableCell>
                   <TableCell>{lk.userById.get(d.uploadedBy)?.fullName}</TableCell><TableCell>{dateTime(d.uploadedAt)}</TableCell>
                   <TableCell align="right">{isSupervisor && <Button size="small" color="error"
                     onClick={async () => { await api.delete(`/assets/${id}/documents/${d.id}`); reload(); }}>{t("Delete")}</Button>}</TableCell>

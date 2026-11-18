@@ -13,7 +13,7 @@ import { api, errMsg, InstructionDto, WorkInstruction } from '../api';
 import { useAuth } from '../auth';
 import { PageHeader, num, useLookups } from '../components/common';
 
-type Step = { text: string; requiresCheck: boolean };
+type Step = { id?: number; text: string; requiresCheck: boolean };   // id keeps check-off history attached
 type PartRow = { partId: number | null; qty: number };
 
 export default function InstructionEditPage() {
@@ -32,7 +32,7 @@ export default function InstructionEditPage() {
     if (isNew) return;
     api.get<InstructionDto>(`/instructions/${id}`).then(({ data }) => {
       setWi(data.instruction);
-      setSteps(data.steps.map((s) => ({ text: s.text, requiresCheck: s.requiresCheck })));
+      setSteps(data.steps.map((s) => ({ id: s.id, text: s.text, requiresCheck: s.requiresCheck })));
       setParts(data.parts.map((p) => ({ partId: p.partId, qty: Number(p.qty) })));
     });
   }, [id, isNew]);
@@ -110,7 +110,7 @@ export default function InstructionEditPage() {
           {parts.map((p, i) => (
             <Stack key={i} direction="row" gap={1} alignItems="center">
               <Autocomplete sx={{ flex: 1 }} size="small" options={lk.parts} readOnly={ro}
-                getOptionLabel={(o) => `${o.partNo} — ${o.name} (${num(o.qtyOnHand)} ${o.unit} on hand)`}
+                getOptionLabel={(o) => `${o.partNo} — ${o.name} (${t('{n} on hand', { n: `${num(o.qtyOnHand)} ${o.unit}` })})`}
                 value={lk.parts.find((x) => x.id === p.partId) ?? null}
                 onChange={(_, v) => setParts(parts.map((x, j) => (j === i ? { ...x, partId: v?.id ?? null } : x)))}
                 renderInput={(params) => <TextField {...params} placeholder={t("Part")} />} />
