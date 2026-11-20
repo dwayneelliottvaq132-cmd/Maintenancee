@@ -52,8 +52,8 @@ export default function DashboardPage() {
                   <YAxis fontSize={12} tickFormatter={(v) => `$${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`} />
                   <Tooltip formatter={(v: number) => money(v)} />
                   <Legend />
-                  <Bar isAnimationActive={false} dataKey="labor" stackId="a" name={t("Labor")} fill="#1565c0" />
-                  <Bar isAnimationActive={false} dataKey="parts" stackId="a" name={t("Parts")} fill="#ef6c00" />
+                  <Bar isAnimationActive={false} dataKey="labor" stackId="a" name={t("Labor")} fill="#406c4f" />
+                  <Bar isAnimationActive={false} dataKey="parts" stackId="a" name={t("Parts")} fill="#fbb340" />
                   <Bar isAnimationActive={false} dataKey="other" stackId="a" name={t("Other / contractors")} fill="#78909c" />
                 </BarChart>
               </ResponsiveContainer>

@@ -60,8 +60,8 @@ export default function ReportsPage() {
                     {groupBy === 'month' ? <><XAxis dataKey="label" fontSize={12} /><YAxis fontSize={12} /></>
                       : <><XAxis type="number" fontSize={12} /><YAxis type="category" dataKey="label" width={200} fontSize={12} /></>}
                     <Tooltip formatter={(v: number) => money(v)} /><Legend />
-                    <Bar isAnimationActive={false} dataKey="labor" stackId="a" name={t("Labor")} fill="#1565c0" />
-                    <Bar isAnimationActive={false} dataKey="parts" stackId="a" name={t("Parts")} fill="#ef6c00" />
+                    <Bar isAnimationActive={false} dataKey="labor" stackId="a" name={t("Labor")} fill="#406c4f" />
+                    <Bar isAnimationActive={false} dataKey="parts" stackId="a" name={t("Parts")} fill="#fbb340" />
                     <Bar isAnimationActive={false} dataKey="other" stackId="a" name={t("Other")} fill="#78909c" />
                   </BarChart>
                 </ResponsiveContainer>

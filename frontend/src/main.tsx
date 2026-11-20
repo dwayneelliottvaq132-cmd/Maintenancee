@@ -8,9 +8,21 @@ import App from './App';
 import { LanguageProvider } from './i18n';
 
 const theme = createTheme({
-  palette: { primary: { main: '#1565c0' }, background: { default: '#f4f6f8' } },
+  // Texas Precision Plating brand palette (from the TPP logo)
+  palette: {
+    primary: { main: '#406c4f', dark: '#2e5039', light: '#5f8a6d', contrastText: '#ffffff' },
+    secondary: { main: '#fbb340', dark: '#c98a1f', contrastText: '#1f2a22' },
+    background: { default: '#f3f4ef', paper: '#ffffff' },
+  },
   shape: { borderRadius: 8 },
-  components: { MuiButton: { defaultProps: { disableElevation: true } } },
+  components: {
+    MuiButton: { defaultProps: { disableElevation: true } },
+    MuiListItemButton: { styleOverrides: { root: {
+      '&.Mui-selected': { backgroundColor: 'rgba(64,108,79,0.12)', color: '#2e5039', '& .MuiListItemIcon-root': { color: '#406c4f' } },
+      '&.Mui-selected:hover': { backgroundColor: 'rgba(64,108,79,0.18)' },
+    } } },
+    MuiAppBar: { styleOverrides: { root: { backgroundColor: '#2e5039', borderBottom: '3px solid #fbb340' } } },
+  },
 });
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 1, refetchOnWindowFocus: false } } });
 

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, Paper, TextField, Typography } from '@mui/material';
 import { useAuth } from '../auth';
 import { errMsg } from '../api';
+import tppLogo from '../assets/tpp-logo.svg';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -23,10 +24,16 @@ export default function LoginPage() {
   return (
     <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="background.default" p={2}>
       <Paper component="form" onSubmit={submit} sx={{ p: 4, width: '100%', maxWidth: 380 }}>
+        <Box display="flex" justifyContent="center" mb={2}>
+          <Box component="img" src={tppLogo} alt="Texas Precision Plating" sx={{ width: '100%', maxWidth: 260 }} />
+        </Box>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h5" fontWeight={600} gutterBottom>{t("Maintenance Manager")}</Typography>
+          <Typography variant="h5" fontWeight={600} color="primary.dark">{t("Maintenance Manager")}</Typography>
           <LanguageSwitch />
         </Box>
+        <Typography variant="caption" sx={{ display: 'block', fontStyle: 'italic', color: 'text.secondary', mb: 1 }}>
+          A Dwayne Elliott and Claudia Production
+        </Typography>
         <Typography color="text.secondary" mb={3}>{t("Sign in to continue")}</Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField label={t("Username")} fullWidth margin="normal" autoFocus value={username} onChange={(e) => setUsername(e.target.value)} />

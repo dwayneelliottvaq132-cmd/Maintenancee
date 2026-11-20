@@ -20,6 +20,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../auth';
 import { Role } from '../api';
+import tppLogo from '../assets/tpp-logo.svg';
 
 const W = 230;
 const NAV: { to: string; label: string; icon: JSX.Element; roles?: Role[] }[] = [
@@ -63,7 +64,16 @@ export default function Layout() {
       <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar>
           {mobile && <IconButton color="inherit" edge="start" onClick={() => setOpen(true)} aria-label={t("menu")}><MenuIcon /></IconButton>}
-          <Typography variant="h6" sx={{ flexGrow: 1, ml: mobile ? 1 : 0 }} noWrap>{t("Maintenance Manager")}</Typography>
+          <Box component={Link} to="/" sx={{ display: 'flex', alignItems: 'center', ml: mobile ? 1 : 0, mr: 2, textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
+            <Box component="img" src={tppLogo} alt="Texas Precision Plating" sx={{ height: 44, display: 'block', flexShrink: 0, bgcolor: '#fffdf6', borderRadius: 1.5, px: 1, py: 0.5, boxShadow: '0 0 0 1px rgba(251,179,64,0.5)' }} />
+            <Box sx={{ ml: 2, pl: 2, borderLeft: '1px solid rgba(251,179,64,0.6)', minWidth: 0, display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="h6" lineHeight={1.15} noWrap>{t("Maintenance Manager")}</Typography>
+              <Typography variant="caption" noWrap sx={{ display: 'block', color: '#fbb340', fontStyle: 'italic', letterSpacing: 0.3 }}>
+                A Dwayne Elliott and Claudia Production
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ flexGrow: 1 }} />
           <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', sm: 'block' } }}>
             {user?.fullName} · {tEnum(user?.role).toLowerCase()}
           </Typography>
